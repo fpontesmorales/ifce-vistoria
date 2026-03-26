@@ -1,0 +1,31 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ifce-vistorias:latest
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY_obrigatoria_no_Dokploy}
+      DATABASE_URL: sqlite:////app/instance/vistorias.db
+      PORT: 8000
+      GUNICORN_WORKERS: ${GUNICORN_WORKERS:-1}
+      GUNICORN_THREADS: ${GUNICORN_THREADS:-4}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-120}
+    volumes:
+      - ifce_vistorias_data:/app/instance
+    ports:
+      - "8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/login', timeout=5)\"",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  ifce_vistorias_data:
