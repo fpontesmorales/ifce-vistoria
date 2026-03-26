@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 from app import create_app
 from app.extensions import db
 from app.models.usuario import Usuario
-from app.models.colaborador import Colaborador
+from app.services.usuarios import sync_colaborador_projection
 
 
 def seed_usuario_admin():
@@ -52,18 +52,18 @@ def seed_colaborador_demo():
         print("[OK] Colaborador demo já existe.")
         return
 
-    usuario = Usuario(nome="João da Silva", username="colaborador1", perfil="colaborador", ativo=True)
+    usuario = Usuario(
+        nome="João da Silva",
+        nome_exibicao="João Silva",
+        funcao="Servente de Limpeza",
+        username="colaborador1",
+        perfil="colaborador",
+        ativo=True,
+    )
     usuario.set_senha("colab123")
     db.session.add(usuario)
     db.session.flush()
-
-    colab = Colaborador(
-        usuario_id=usuario.id,
-        nome_exibicao="João Silva",
-        funcao="Servente de Limpeza",
-        ativo=True,
-    )
-    db.session.add(colab)
+    sync_colaborador_projection(usuario)
     db.session.commit()
     print(f"[CRIADO] Colaborador demo '{usuario.username}' (id={usuario.id}) — senha: colab123")
 

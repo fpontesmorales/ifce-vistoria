@@ -29,6 +29,12 @@ def requer_colaborador(f):
 def get_colaborador_ou_404():
     """Retorna o Colaborador vinculado ao usuário logado ou aborta com 403."""
     from app.models.colaborador import Colaborador
+    from app.services.usuarios import sync_colaborador_projection
+
+    # Fluxo unificado: garante projeção técnica de colaborador automaticamente.
+    sync_colaborador_projection(current_user)
+    db.session.flush()
+
     colaborador = db.session.scalar(
         db.select(Colaborador).where(Colaborador.usuario_id == current_user.id)
     )

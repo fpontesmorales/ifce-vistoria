@@ -46,6 +46,8 @@ class AmbienteForm(FlaskForm):
 
 class UsuarioCriarForm(FlaskForm):
     nome = StringField("Nome completo", validators=[DataRequired(), Length(max=120)])
+    nome_exibicao = StringField("Nome de exibição (colaborador)", validators=[Optional(), Length(max=120)])
+    funcao = StringField("Função (colaborador)", validators=[Optional(), Length(max=80)])
     username = StringField(
         "Usuário (login)",
         validators=[DataRequired(), Length(min=3, max=64, message="Entre 3 e 64 caracteres.")],
@@ -68,9 +70,21 @@ class UsuarioCriarForm(FlaskForm):
         if existe:
             raise ValidationError("Este nome de usuário já está em uso.")
 
+    def validate(self, extra_validators=None):
+        ok = super().validate(extra_validators=extra_validators)
+        if not ok:
+            return False
+        if self.perfil.data == "colaborador":
+            if not (self.nome_exibicao.data or "").strip():
+                self.nome_exibicao.errors.append("Informe o nome de exibição para colaboradores.")
+                return False
+        return True
+
 
 class UsuarioEditForm(FlaskForm):
     nome = StringField("Nome completo", validators=[DataRequired(), Length(max=120)])
+    nome_exibicao = StringField("Nome de exibição (colaborador)", validators=[Optional(), Length(max=120)])
+    funcao = StringField("Função (colaborador)", validators=[Optional(), Length(max=80)])
     username = StringField(
         "Usuário (login)",
         validators=[DataRequired(), Length(min=3, max=64, message="Entre 3 e 64 caracteres.")],
@@ -99,22 +113,15 @@ class UsuarioEditForm(FlaskForm):
         )
         if existe:
             raise ValidationError("Este nome de usuário já está em uso.")
-
-
-# ─── Colaborador ─────────────────────────────────────────────────────────────
-
-class ColaboradorForm(FlaskForm):
-    usuario_id = SelectField(
-        "Usuário vinculado",
-        coerce=int,
-        validators=[DataRequired(message="Selecione o usuário.")],
-    )
-    nome_exibicao = StringField(
-        "Nome de exibição",
-        validators=[DataRequired(), Length(max=120)],
-    )
-    funcao = StringField("Função", validators=[Optional(), Length(max=80)])
-    submit = SubmitField("Salvar")
+    def validate(self, extra_validators=None):
+        ok = super().validate(extra_validators=extra_validators)
+        if not ok:
+            return False
+        if self.perfil.data == "colaborador":
+            if not (self.nome_exibicao.data or "").strip():
+                self.nome_exibicao.errors.append("Informe o nome de exibição para colaboradores.")
+                return False
+        return True
 
 
 # ─── Atividade ───────────────────────────────────────────────────────────────

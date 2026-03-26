@@ -14,9 +14,10 @@ from app.models.vistoria import Vistoria
 from app.forms.admin import (
     BlocoForm, AmbienteForm,
     UsuarioCriarForm, UsuarioEditForm,
-    ColaboradorForm, AtividadeForm,
+    AtividadeForm,
     OcorrenciaAdminForm,
 )
+from app.services.usuarios import sync_colaborador_projection
 from app.utils import requer_coordenacao
 
 bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -370,15 +371,23 @@ def usuarios_lista():
 @requer_coordenacao
 def usuarios_novo():
     form = UsuarioCriarForm()
+    if request.method == "GET":
+        perfil_pre = (request.args.get("perfil") or "").strip()
+        if perfil_pre in {"colaborador", "coordenacao", "admin"}:
+            form.perfil.data = perfil_pre
     if form.validate_on_submit():
         usuario = Usuario(
             nome=form.nome.data.strip(),
+            nome_exibicao=(form.nome_exibicao.data or "").strip() or None,
+            funcao=(form.funcao.data or "").strip() or None,
             username=form.username.data.strip(),
             perfil=form.perfil.data,
             ativo=True,
         )
         usuario.set_senha(form.senha.data)
         db.session.add(usuario)
+        db.session.flush()
+        sync_colaborador_projection(usuario)
         db.session.commit()
         flash(f"Usuário '{usuario.username}' criado.", "success")
         return redirect(url_for("admin.cadastros", aba="usuarios"))
@@ -393,10 +402,13 @@ def usuarios_editar(id):
     form = UsuarioEditForm(usuario_id=id, obj=usuario)
     if form.validate_on_submit():
         usuario.nome = form.nome.data.strip()
+        usuario.nome_exibicao = (form.nome_exibicao.data or "").strip() or None
+        usuario.funcao = (form.funcao.data or "").strip() or None
         usuario.username = form.username.data.strip()
         usuario.perfil = form.perfil.data
         if form.nova_senha.data:
             usuario.set_senha(form.nova_senha.data)
+        sync_colaborador_projection(usuario)
         db.session.commit()
         flash(f"Usuário '{usuario.username}' atualizado.", "success")
         return redirect(url_for("admin.cadastros", aba="usuarios"))
@@ -412,6 +424,7 @@ def usuarios_toggle(id):
         flash("Você não pode inativar sua própria conta.", "warning")
         return redirect(url_for("admin.cadastros", aba="usuarios"))
     usuario.ativo = not usuario.ativo
+    sync_colaborador_projection(usuario)
     db.session.commit()
     flash(f"Usuário '{usuario.username}' {'ativado' if usuario.ativo else 'inativado'}.", "success")
     return redirect(url_for("admin.usuarios_lista"))
@@ -423,42 +436,16 @@ def usuarios_toggle(id):
 @login_required
 @requer_coordenacao
 def colaboradores_lista():
-    colaboradores = db.session.scalars(
-        db.select(Colaborador).join(Usuario).order_by(Colaborador.nome_exibicao)
-    ).all()
-    return render_template("admin/colaboradores/lista.html", colaboradores=colaboradores)
+    flash("Cadastro de colaboradores foi unificado em Usuários.", "info")
+    return redirect(url_for("admin.usuarios_lista"))
 
 
 @bp.route("/colaboradores/novo", methods=["GET", "POST"])
 @login_required
 @requer_coordenacao
 def colaboradores_novo():
-    form = ColaboradorForm()
-    subq = db.select(Colaborador.usuario_id)
-    usuarios_disponiveis = db.session.scalars(
-        db.select(Usuario)
-        .where(Usuario.perfil == "colaborador")
-        .where(Usuario.ativo == True)  # noqa: E712
-        .where(~Usuario.id.in_(subq))
-        .order_by(Usuario.nome)
-    ).all()
-    form.usuario_id.choices = [(u.id, f"{u.nome} ({u.username})") for u in usuarios_disponiveis]
-    if not usuarios_disponiveis and request.method == "GET":
-        flash("Todos os usuários colaboradores já estão vinculados.", "info")
-    if form.validate_on_submit():
-        colaborador = Colaborador(
-            usuario_id=form.usuario_id.data,
-            nome_exibicao=form.nome_exibicao.data.strip(),
-            funcao=form.funcao.data.strip() or None,
-            ativo=True,
-        )
-        db.session.add(colaborador)
-        db.session.commit()
-        flash(f"Colaborador '{colaborador.nome_exibicao}' cadastrado.", "success")
-        return redirect(url_for("admin.cadastros", aba="colaboradores"))
-    return render_template(
-        "admin/colaboradores/form.html", form=form, titulo="Novo colaborador", colaborador=None
-    )
+    flash("Use o cadastro de Usuários e selecione o perfil 'colaborador'.", "info")
+    return redirect(url_for("admin.usuarios_novo", perfil="colaborador"))
 
 
 @bp.route("/colaboradores/<int:id>/editar", methods=["GET", "POST"])
@@ -466,19 +453,8 @@ def colaboradores_novo():
 @requer_coordenacao
 def colaboradores_editar(id):
     colaborador = db.get_or_404(Colaborador, id)
-    form = ColaboradorForm(obj=colaborador)
-    form.usuario_id.choices = [
-        (colaborador.usuario_id, f"{colaborador.usuario.nome} ({colaborador.usuario.username})")
-    ]
-    if form.validate_on_submit():
-        colaborador.nome_exibicao = form.nome_exibicao.data.strip()
-        colaborador.funcao = form.funcao.data.strip() or None
-        db.session.commit()
-        flash(f"Colaborador '{colaborador.nome_exibicao}' atualizado.", "success")
-        return redirect(url_for("admin.cadastros", aba="colaboradores"))
-    return render_template(
-        "admin/colaboradores/form.html", form=form, titulo="Editar colaborador", colaborador=colaborador
-    )
+    flash("Edite os dados operacionais no cadastro de Usuários.", "info")
+    return redirect(url_for("admin.usuarios_editar", id=colaborador.usuario_id))
 
 
 @bp.route("/colaboradores/<int:id>/toggle", methods=["POST"])
@@ -486,22 +462,20 @@ def colaboradores_editar(id):
 @requer_coordenacao
 def colaboradores_toggle(id):
     colaborador = db.get_or_404(Colaborador, id)
-    colaborador.ativo = not colaborador.ativo
-    db.session.commit()
-    flash(
-        f"Colaborador '{colaborador.nome_exibicao}' {'ativado' if colaborador.ativo else 'inativado'}.",
-        "success",
-    )
-    return redirect(url_for("admin.colaboradores_lista"))
+    flash("Ative/inative via cadastro de Usuários.", "info")
+    return redirect(url_for("admin.usuarios_editar", id=colaborador.usuario_id))
 
 
-# ─── Cadastros (Blocos + Ambientes + Colaboradores + Usuários) ───────────────
+# ─── Cadastros (Blocos + Ambientes + Usuários) ────────────────────────────────
 
 @bp.route("/cadastros")
 @login_required
 @requer_coordenacao
 def cadastros():
     aba = request.args.get("aba", "blocos")
+    if aba == "colaboradores":
+        flash("Cadastro de colaboradores foi unificado em Usuários.", "info")
+        return redirect(url_for("admin.cadastros", aba="usuarios"))
     bloco_id_filtro = request.args.get("bloco_id", type=int)
 
     blocos = db.session.scalars(
@@ -516,10 +490,6 @@ def cadastros():
         query_amb = query_amb.where(Ambiente.bloco_id == bloco_id_filtro)
     ambientes = db.session.scalars(query_amb).all()
 
-    colaboradores = db.session.scalars(
-        db.select(Colaborador).join(Usuario).order_by(Colaborador.nome_exibicao)
-    ).all()
-
     usuarios = db.session.scalars(
         db.select(Usuario).order_by(Usuario.nome)
     ).all()
@@ -529,7 +499,6 @@ def cadastros():
         aba=aba,
         blocos=blocos,
         ambientes=ambientes,
-        colaboradores=colaboradores,
         usuarios=usuarios,
         bloco_id_filtro=bloco_id_filtro,
     )
@@ -822,8 +791,15 @@ def dados_exportar():
             for a in ambientes
         ],
         "usuarios": [
-            {"id": u.id, "nome": u.nome, "username": u.username,
-             "perfil": u.perfil, "ativo": u.ativo}
+            {
+                "id": u.id,
+                "nome": u.nome,
+                "nome_exibicao": u.nome_exibicao,
+                "funcao": u.funcao,
+                "username": u.username,
+                "perfil": u.perfil,
+                "ativo": u.ativo,
+            }
             for u in usuarios
         ],
     }
@@ -913,6 +889,8 @@ def dados_importar():
         else:
             u = Usuario(
                 nome=item["nome"],
+                nome_exibicao=(item.get("nome_exibicao") or "").strip() or None,
+                funcao=(item.get("funcao") or "").strip() or None,
                 username=item["username"],
                 perfil=item.get("perfil", "colaborador"),
                 ativo=item.get("ativo", True),
@@ -920,6 +898,8 @@ def dados_importar():
             # Senha temporária = username — coordenação deve redefinir
             u.set_senha(item["username"])
             db.session.add(u)
+            db.session.flush()
+            sync_colaborador_projection(u)
             criados_usr += 1
 
     db.session.commit()

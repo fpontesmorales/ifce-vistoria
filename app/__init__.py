@@ -2,6 +2,7 @@ import os
 from flask import Flask
 from config import Config
 from app.extensions import db, login_manager, csrf
+from app.services.usuarios import ensure_usuario_operacional_columns, sync_all_colaborador_projection
 
 
 def create_app(config_class=Config):
@@ -33,5 +34,8 @@ def create_app(config_class=Config):
     with app.app_context():
         from app.models import usuario, colaborador, bloco, ambiente, atividade, vistoria, ocorrencia  # noqa: F401
         db.create_all()
+        ensure_usuario_operacional_columns()
+        sync_all_colaborador_projection()
+        db.session.commit()
 
     return app

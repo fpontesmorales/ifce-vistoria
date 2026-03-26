@@ -9,6 +9,8 @@ class Usuario(UserMixin, db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(120), nullable=False)
+    nome_exibicao = db.Column(db.String(120), nullable=True)
+    funcao = db.Column(db.String(80), nullable=True)
     username = db.Column(db.String(64), unique=True, nullable=False, index=True)
     senha_hash = db.Column(db.String(256), nullable=False)
     perfil = db.Column(db.String(20), nullable=False, default="colaborador")
@@ -39,6 +41,10 @@ class Usuario(UserMixin, db.Model):
     @property
     def is_colaborador(self):
         return self.perfil == "colaborador"
+
+    @property
+    def nome_operacional(self):
+        return (self.nome_exibicao or self.nome or "").strip()
 
     def __repr__(self):
         return f"<Usuario {self.username} [{self.perfil}]>"

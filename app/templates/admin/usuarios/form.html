@@ -2,6 +2,31 @@
 {% from "admin/_macros.html" import campo %}
 {% block title %}{{ titulo }}{% endblock %}
 
+{% block extra_head %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var perfil = document.getElementById('{{ form.perfil.id }}');
+    var boxOper = document.getElementById('box-dados-operacionais');
+    if (perfil && boxOper) {
+      function atualizarBox() {
+        var ehColaborador = perfil.value === 'colaborador';
+        boxOper.classList.toggle('hidden', !ehColaborador);
+      }
+      perfil.addEventListener('change', atualizarBox);
+      atualizarBox();
+    }
+
+    var nome = document.getElementById('{{ form.nome.id }}');
+    var nomeExib = document.getElementById('{{ form.nome_exibicao.id }}');
+    if (nome && nomeExib) {
+      nome.addEventListener('blur', function () {
+        if (!nomeExib.value.trim()) nomeExib.value = nome.value.trim();
+      });
+    }
+  });
+</script>
+{% endblock %}
+
 {% block content %}
 
 <div class="flex items-center justify-between mb-5">
@@ -27,6 +52,14 @@
     {{ campo(form.nome) }}
     {{ campo(form.username, hint='Usado para login. Somente letras, números e ponto.') }}
     {{ campo(form.perfil) }}
+
+    <div id="box-dados-operacionais" class="border-t border-gray-100 pt-5 mt-1">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">
+        Dados operacionais de colaborador
+      </p>
+      {{ campo(form.nome_exibicao, hint='Obrigatório para perfil colaborador. Ex: João Silva') }}
+      {{ campo(form.funcao, hint='Opcional. Ex: Servente, Eletricista, Pintor') }}
+    </div>
 
     {% if usuario %}
       {# Edição — senha opcional #}
