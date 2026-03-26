@@ -33,10 +33,27 @@
 
     var modoLote = document.getElementById('{{ form.modo_lote.id }}');
     var boxLote = document.getElementById('box-colaboradores-lote');
+    var avisoModoBloco = document.getElementById('aviso-modo-bloco');
     if (modoLote && boxLote) {
       function atualizarBoxLote() {
-        var mostrar = modoLote.value !== 'unica';
+        var modo = modoLote.value;
+        var mostrar = modo !== 'unica';
+        var modoBloco = modo === 'roteiro_bloco';
+
         boxLote.classList.toggle('hidden', !mostrar);
+
+        if (avisoModoBloco) {
+          avisoModoBloco.classList.toggle('hidden', !modoBloco);
+        }
+
+        if (selAmbiente) {
+          if (modoBloco) {
+            selAmbiente.value = '0';
+          }
+          selAmbiente.disabled = modoBloco;
+          selAmbiente.classList.toggle('bg-gray-100', modoBloco);
+          selAmbiente.classList.toggle('text-gray-400', modoBloco);
+        }
       }
       modoLote.addEventListener('change', atualizarBoxLote);
       atualizarBoxLote();
@@ -75,7 +92,7 @@
       {{ campo(form.colaborador_id, hint='Colaborador principal da atividade.') }}
 
       {% if not atividade %}
-        {{ campo(form.modo_lote, hint='Use "compartilhada" para dupla/trio na mesma atividade. Replicar/dividir criam atividades separadas.') }}
+        {{ campo(form.modo_lote, hint='Use "compartilhada" para dupla/trio na mesma atividade. O modo "1 por ambiente do bloco" cria uma atividade para cada ambiente ativo e distribui entre a equipe.') }}
       {% endif %}
 
       <div id="box-colaboradores-lote"
@@ -155,6 +172,10 @@
         {% if not form.ambiente_id.errors %}
           <p class="text-xs text-gray-400 mt-1.5">Opcional. Serão exibidos apenas ambientes do bloco selecionado.</p>
         {% endif %}
+        <p id="aviso-modo-bloco"
+           class="text-xs text-blue-600 mt-1.5 hidden">
+          No modo por bloco, o ambiente individual fica desativado e o sistema cria uma atividade para cada ambiente ativo do bloco.
+        </p>
         {% for erro in form.ambiente_id.errors %}
           <p class="text-xs text-red-600 mt-1.5 flex items-center gap-1">
             <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

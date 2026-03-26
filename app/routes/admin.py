@@ -106,6 +106,83 @@ def _filtro_atividade_por_colaborador(colaborador_id):
     )
 
 
+def _ultimo_colaborador_por_ambiente(ambientes_ids):
+    if not ambientes_ids:
+        return {}
+
+    ultima_sq = (
+        db.select(
+            Vistoria.ambiente_id.label("ambiente_id"),
+            db.func.max(Vistoria.data_vistoria).label("ultima_data"),
+        )
+        .where(Vistoria.ambiente_id.in_(ambientes_ids))
+        .group_by(Vistoria.ambiente_id)
+        .subquery()
+    )
+
+    linhas = db.session.execute(
+        db.select(Vistoria.ambiente_id, Vistoria.colaborador_id)
+        .join(
+            ultima_sq,
+            db.and_(
+                Vistoria.ambiente_id == ultima_sq.c.ambiente_id,
+                Vistoria.data_vistoria == ultima_sq.c.ultima_data,
+            ),
+        )
+    ).all()
+
+    mapa = {}
+    for ambiente_id, colaborador_id in linhas:
+        if ambiente_id not in mapa:
+            mapa[ambiente_id] = colaborador_id
+    return mapa
+
+
+def _distribuir_ambientes_por_rodizio(ambientes, colaboradores_ids, ultimos_por_ambiente):
+    """
+    Distribui ambientes de forma equilibrada entre colaboradores,
+    evitando repetir o último vistoriador do ambiente quando possível.
+    """
+    if not ambientes or not colaboradores_ids:
+        return {}, {}
+
+    cargas = {colaborador_id: 0 for colaborador_id in colaboradores_ids}
+    distribuicao = {}
+    cursor = 0
+    total_colaboradores = len(colaboradores_ids)
+
+    for ambiente in ambientes:
+        ultimo_colaborador_id = ultimos_por_ambiente.get(ambiente.id)
+        elegiveis = [
+            colaborador_id
+            for colaborador_id in colaboradores_ids
+            if colaborador_id != ultimo_colaborador_id
+        ]
+        if not elegiveis:
+            elegiveis = list(colaboradores_ids)
+
+        menor_carga = min(cargas[colaborador_id] for colaborador_id in elegiveis)
+        candidatos = [
+            colaborador_id
+            for colaborador_id in elegiveis
+            if cargas[colaborador_id] == menor_carga
+        ]
+
+        ordem_rodizio = (
+            colaboradores_ids[cursor:] + colaboradores_ids[:cursor]
+        )
+        escolhido = next(
+            (colaborador_id for colaborador_id in ordem_rodizio if colaborador_id in candidatos),
+            candidatos[0],
+        )
+
+        distribuicao[ambiente.id] = escolhido
+        cargas[escolhido] += 1
+        cursor = (cursor + 1) % total_colaboradores
+
+    return distribuicao, cargas
+
+
 # ─── Painel ──────────────────────────────────────────────────────────────────
 
 @bp.route("/painel")
@@ -541,7 +618,7 @@ def atividades_lista():
 @requer_coordenacao
 def atividades_novo():
     form = AtividadeForm()
-    _, blocos, ambientes = _popular_choices_atividade(form)
+    colaboradores, blocos, ambientes = _popular_choices_atividade(form)
     if form.validate_on_submit():
         ok_loc, bloco_id_final, ambiente_id_final = _normalizar_bloco_ambiente_atividade(form)
         if not ok_loc:
@@ -560,7 +637,7 @@ def atividades_novo():
             form.colaboradores_ids.data,
         )
 
-        if modo_lote in {"compartilhada", "replicar", "dividir"} and len(colaboradores_destino) < 2:
+        if modo_lote in {"compartilhada", "replicar", "dividir", "roteiro_bloco"} and len(colaboradores_destino) < 2:
             flash(
                 "Selecione ao menos 2 colaboradores (incluindo o principal) para este modo de criação.",
                 "warning",
@@ -578,6 +655,103 @@ def atividades_novo():
         descricao_base = form.descricao.data.strip() or None
         observacoes_base = form.observacoes.data.strip() or None
         atividades_criadas = []
+
+        if modo_lote == "roteiro_bloco":
+            if not bloco_id_final:
+                flash("No modo por bloco, selecione um bloco para gerar as atividades.", "warning")
+                return render_template(
+                    "admin/atividades/form.html",
+                    form=form,
+                    titulo="Nova atividade",
+                    atividade=None,
+                    blocos_atividade=blocos,
+                    ambientes_atividade=ambientes,
+                )
+
+            if ambiente_id_final:
+                flash(
+                    "No modo por bloco, o ambiente individual é ignorado e o sistema usa todos os ambientes ativos do bloco.",
+                    "info",
+                )
+
+            ambientes_bloco = db.session.scalars(
+                db.select(Ambiente)
+                .where(
+                    Ambiente.bloco_id == bloco_id_final,
+                    Ambiente.ativo == True,  # noqa: E712
+                )
+                .order_by(Ambiente.ordem, Ambiente.nome)
+            ).all()
+
+            if not ambientes_bloco:
+                flash("O bloco selecionado não possui ambientes ativos para gerar atividades.", "warning")
+                return render_template(
+                    "admin/atividades/form.html",
+                    form=form,
+                    titulo="Nova atividade",
+                    atividade=None,
+                    blocos_atividade=blocos,
+                    ambientes_atividade=ambientes,
+                )
+
+            ultimos_por_ambiente = _ultimo_colaborador_por_ambiente(
+                [ambiente.id for ambiente in ambientes_bloco]
+            )
+            distribuicao, cargas = _distribuir_ambientes_por_rodizio(
+                ambientes_bloco,
+                colaboradores_destino,
+                ultimos_por_ambiente,
+            )
+
+            trocas = 0
+            repeticoes = 0
+            sem_historico = 0
+            for ambiente in ambientes_bloco:
+                colaborador_id = distribuicao[ambiente.id]
+                ultimo_colaborador_id = ultimos_por_ambiente.get(ambiente.id)
+                if ultimo_colaborador_id is None:
+                    sem_historico += 1
+                elif ultimo_colaborador_id == colaborador_id:
+                    repeticoes += 1
+                else:
+                    trocas += 1
+
+                atividade = Atividade(
+                    titulo=f"{titulo_base} — {ambiente.nome}",
+                    descricao=descricao_base,
+                    tipo=form.tipo.data,
+                    colaborador_id=colaborador_id,
+                    bloco_id=bloco_id_final,
+                    ambiente_id=ambiente.id,
+                    observacoes=observacoes_base,
+                )
+                _sincronizar_alocacoes_atividade(atividade, [colaborador_id])
+                db.session.add(atividade)
+                atividades_criadas.append(atividade)
+
+            db.session.commit()
+
+            bloco_nome = next((b.nome for b in blocos if b.id == bloco_id_final), "bloco selecionado")
+            colaboradores_por_id = {c.id: c.nome_exibicao for c in colaboradores}
+            resumo_distribuicao = ", ".join(
+                f"{colaboradores_por_id.get(colaborador_id, f'#{colaborador_id}')}: {quantidade}"
+                for colaborador_id, quantidade in sorted(
+                    cargas.items(),
+                    key=lambda item: (-item[1], colaboradores_por_id.get(item[0], "")),
+                )
+            )
+
+            flash(
+                f"{len(atividades_criadas)} atividades criadas para os ambientes do bloco '{bloco_nome}'. "
+                f"Distribuição: {resumo_distribuicao}.",
+                "success",
+            )
+            flash(
+                f"Rodízio aplicado: {trocas} troca(s) de responsável em relação à última vistoria, "
+                f"{repeticoes} repetição(ões) por restrição de equipe e {sem_historico} ambiente(s) sem histórico.",
+                "info",
+            )
+            return redirect(url_for("admin.atividades_lista"))
 
         if modo_lote in {"replicar", "dividir"}:
             total = len(colaboradores_destino)

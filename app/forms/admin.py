@@ -142,6 +142,7 @@ class AtividadeForm(FlaskForm):
             ("compartilhada", "Atividade compartilhada (dupla/trio)"),
             ("replicar", "Lote: replicar para colaboradores"),
             ("dividir", "Lote: dividir automaticamente"),
+            ("roteiro_bloco", "Lote: 1 atividade por ambiente do bloco"),
         ],
         default="unica",
         validators=[Optional()],
