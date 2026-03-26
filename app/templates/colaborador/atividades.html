@@ -108,6 +108,11 @@
         </div>
 
         <p class="text-base font-semibold text-gray-900 leading-snug mt-1">{{ at.titulo }}</p>
+        {% if at.total_colaboradores > 1 %}
+        <p class="text-xs text-gray-500 mt-1">
+          Equipe: {{ at.colaboradores_nomes }}
+        </p>
+        {% endif %}
 
         {% if at.descricao %}
         <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ at.descricao }}</p>

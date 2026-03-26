@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField, PasswordField, SelectField,
-    TextAreaField, IntegerField, SubmitField,
+    SelectMultipleField, TextAreaField, IntegerField, SubmitField,
 )
 from wtforms.validators import DataRequired, Optional, Length, EqualTo, ValidationError, NumberRange
 from app.extensions import db
@@ -127,6 +127,22 @@ class AtividadeForm(FlaskForm):
         "Colaborador",
         coerce=int,
         validators=[DataRequired(message="Selecione o colaborador.")],
+    )
+    modo_lote = SelectField(
+        "Modo de criação",
+        choices=[
+            ("unica", "Atividade única"),
+            ("compartilhada", "Atividade compartilhada (dupla/trio)"),
+            ("replicar", "Lote: replicar para colaboradores"),
+            ("dividir", "Lote: dividir automaticamente"),
+        ],
+        default="unica",
+        validators=[Optional()],
+    )
+    colaboradores_ids = SelectMultipleField(
+        "Colaboradores adicionais",
+        coerce=int,
+        validators=[Optional()],
     )
     bloco_id = SelectField("Bloco (opcional)", coerce=int)
     ambiente_id = SelectField("Ambiente (opcional)", coerce=int)

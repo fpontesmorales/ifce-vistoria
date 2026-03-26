@@ -87,7 +87,9 @@
         {# Título + local #}
         <td class="px-5 py-3.5">
           <div class="font-semibold text-gray-800 leading-snug">{{ at.titulo }}</div>
-          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">{{ at.colaborador.nome_exibicao }}</div>
+          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">
+            {{ at.colaboradores_nomes or at.colaborador.nome_exibicao }}
+          </div>
           {% if at.bloco %}
           <div class="text-xs text-gray-400 mt-0.5">
             {{ at.bloco.nome }}{% if at.ambiente %} / {{ at.ambiente.nome }}{% endif %}
@@ -97,7 +99,10 @@
 
         {# Colaborador #}
         <td class="px-5 py-3.5 hidden sm:table-cell">
-          <span class="text-gray-700">{{ at.colaborador.nome_exibicao }}</span>
+          <span class="text-gray-700">{{ at.colaboradores_nomes or at.colaborador.nome_exibicao }}</span>
+          {% if at.total_colaboradores > 1 %}
+          <div class="text-xs text-gray-400 mt-0.5">Atividade compartilhada</div>
+          {% endif %}
         </td>
 
         {# Tipo #}

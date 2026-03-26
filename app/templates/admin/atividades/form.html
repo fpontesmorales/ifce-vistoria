@@ -2,6 +2,49 @@
 {% from "admin/_macros.html" import campo %}
 {% block title %}{{ titulo }}{% endblock %}
 
+{% block extra_head %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var selBloco = document.getElementById('{{ form.bloco_id.id }}');
+    var selAmbiente = document.getElementById('{{ form.ambiente_id.id }}');
+
+    if (selBloco && selAmbiente) {
+      var allOptions = Array.from(selAmbiente.options);
+
+      function filtrarAmbientes() {
+        var blocoId = selBloco.value;
+        var valorAtual = selAmbiente.value;
+
+        while (selAmbiente.options.length > 0) selAmbiente.remove(0);
+
+        allOptions.forEach(function (opt) {
+          if (!blocoId || blocoId === '0' || !opt.dataset.bloco || opt.dataset.bloco === blocoId || opt.value === '0') {
+            selAmbiente.add(opt.cloneNode(true));
+          }
+        });
+
+        selAmbiente.value = valorAtual;
+        if (selAmbiente.value !== valorAtual) selAmbiente.value = '0';
+      }
+
+      selBloco.addEventListener('change', filtrarAmbientes);
+      filtrarAmbientes();
+    }
+
+    var modoLote = document.getElementById('{{ form.modo_lote.id }}');
+    var boxLote = document.getElementById('box-colaboradores-lote');
+    if (modoLote && boxLote) {
+      function atualizarBoxLote() {
+        var mostrar = modoLote.value !== 'unica';
+        boxLote.classList.toggle('hidden', !mostrar);
+      }
+      modoLote.addEventListener('change', atualizarBoxLote);
+      atualizarBoxLote();
+    }
+  });
+</script>
+{% endblock %}
+
 {% block content %}
 
 <div class="flex items-center justify-between mb-5">
@@ -29,9 +72,99 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
       <div class="sm:col-span-2">{{ campo(form.titulo) }}</div>
       {{ campo(form.tipo) }}
-      {{ campo(form.colaborador_id) }}
-      {{ campo(form.bloco_id, hint='Opcional. Deixe em "nenhum" se a atividade não for vinculada a um local.') }}
-      {{ campo(form.ambiente_id, hint='Opcional. Selecione apenas se a atividade for em um ambiente específico.') }}
+      {{ campo(form.colaborador_id, hint='Colaborador principal da atividade.') }}
+
+      {% if not atividade %}
+        {{ campo(form.modo_lote, hint='Use "compartilhada" para dupla/trio na mesma atividade. Replicar/dividir criam atividades separadas.') }}
+      {% endif %}
+
+      <div id="box-colaboradores-lote"
+           class="sm:col-span-2 mb-5 {% if not atividade and (form.modo_lote.data or 'unica') == 'unica' %}hidden{% endif %}">
+        <label for="{{ form.colaboradores_ids.id }}" class="block text-sm font-semibold text-gray-700 mb-1.5">
+          {{ form.colaboradores_ids.label.text }}
+        </label>
+        {{ form.colaboradores_ids(
+          class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition placeholder-gray-400",
+          size=6,
+          multiple=true
+        ) }}
+        {% if not form.colaboradores_ids.errors %}
+          {% if atividade %}
+            <p class="text-xs text-gray-400 mt-1.5">Equipe da atividade compartilhada. Use Ctrl/Cmd para múltipla seleção.</p>
+          {% else %}
+            <p class="text-xs text-gray-400 mt-1.5">Use Ctrl/Cmd para selecionar múltiplos colaboradores.</p>
+          {% endif %}
+        {% endif %}
+        {% for erro in form.colaboradores_ids.errors %}
+          <p class="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ erro }}
+          </p>
+        {% endfor %}
+      </div>
+
+      <div class="mb-5">
+        <label for="{{ form.bloco_id.id }}" class="block text-sm font-semibold text-gray-700 mb-1.5">
+          {{ form.bloco_id.label.text }}
+        </label>
+        <select
+          id="{{ form.bloco_id.id }}"
+          name="{{ form.bloco_id.name }}"
+          class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition placeholder-gray-400"
+        >
+          <option value="0" {% if not form.bloco_id.data %}selected{% endif %}>— nenhum —</option>
+          {% for bloco in blocos_atividade %}
+            <option value="{{ bloco.id }}" {% if form.bloco_id.data == bloco.id %}selected{% endif %}>{{ bloco.nome }}</option>
+          {% endfor %}
+        </select>
+        {% if not form.bloco_id.errors %}
+          <p class="text-xs text-gray-400 mt-1.5">Opcional. Deixe em "nenhum" se a atividade não for vinculada a um local.</p>
+        {% endif %}
+        {% for erro in form.bloco_id.errors %}
+          <p class="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ erro }}
+          </p>
+        {% endfor %}
+      </div>
+
+      <div class="mb-5">
+        <label for="{{ form.ambiente_id.id }}" class="block text-sm font-semibold text-gray-700 mb-1.5">
+          {{ form.ambiente_id.label.text }}
+        </label>
+        <select
+          id="{{ form.ambiente_id.id }}"
+          name="{{ form.ambiente_id.name }}"
+          class="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition placeholder-gray-400"
+        >
+          <option value="0" {% if not form.ambiente_id.data %}selected{% endif %}>— nenhum —</option>
+          {% for ambiente in ambientes_atividade %}
+            <option
+              value="{{ ambiente.id }}"
+              data-bloco="{{ ambiente.bloco_id }}"
+              {% if form.ambiente_id.data == ambiente.id %}selected{% endif %}
+            >
+              {{ ambiente.bloco.nome }} / {{ ambiente.nome }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if not form.ambiente_id.errors %}
+          <p class="text-xs text-gray-400 mt-1.5">Opcional. Serão exibidos apenas ambientes do bloco selecionado.</p>
+        {% endif %}
+        {% for erro in form.ambiente_id.errors %}
+          <p class="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+            {{ erro }}
+          </p>
+        {% endfor %}
+      </div>
+
       <div class="sm:col-span-2">{{ campo(form.descricao, rows=3) }}</div>
       <div class="sm:col-span-2">{{ campo(form.observacoes, rows=2, hint='Observações internas para a coordenação.') }}</div>
     </div>

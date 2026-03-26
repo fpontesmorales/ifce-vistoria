@@ -2,12 +2,13 @@ import json
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, redirect, url_for, flash, request, Response
 from flask_login import login_required, current_user
+from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.models.bloco import Bloco
 from app.models.ambiente import Ambiente
 from app.models.usuario import Usuario
 from app.models.colaborador import Colaborador
-from app.models.atividade import Atividade
+from app.models.atividade import Atividade, AtividadeColaborador
 from app.models.ocorrencia import Ocorrencia
 from app.models.vistoria import Vistoria
 from app.forms.admin import (
@@ -37,10 +38,71 @@ def _popular_choices_atividade(form):
     ).all()
     form.tipo.choices = Atividade.TIPOS
     form.colaborador_id.choices = [(c.id, c.nome_exibicao) for c in colaboradores]
+    form.colaboradores_ids.choices = [(c.id, c.nome_exibicao) for c in colaboradores]
     form.bloco_id.choices = [(0, "— nenhum —")] + [(b.id, b.nome) for b in blocos]
     form.ambiente_id.choices = [(0, "— nenhum —")] + [
         (a.id, f"{a.bloco.nome} / {a.nome}") for a in ambientes
     ]
+    return colaboradores, blocos, ambientes
+
+
+def _normalizar_bloco_ambiente_atividade(form):
+    """Valida consistência bloco/ambiente e normaliza IDs finais."""
+    bloco_id = form.bloco_id.data or None
+    ambiente_id = form.ambiente_id.data or None
+
+    if ambiente_id is None:
+        return True, bloco_id, None
+
+    ambiente = db.session.get(Ambiente, ambiente_id)
+    if ambiente is None:
+        flash("Ambiente selecionado é inválido.", "danger")
+        return False, bloco_id, ambiente_id
+
+    # Se o usuário escolher só o ambiente, inferimos automaticamente o bloco.
+    if bloco_id is None:
+        return True, ambiente.bloco_id, ambiente_id
+
+    if ambiente.bloco_id != bloco_id:
+        flash("O ambiente selecionado não pertence ao bloco escolhido.", "danger")
+        return False, bloco_id, ambiente_id
+
+    return True, bloco_id, ambiente_id
+
+
+def _normalizar_colaboradores_destino(colaborador_principal_id, colaboradores_adicionais_ids):
+    destino = [colaborador_principal_id]
+    for colaborador_id in colaboradores_adicionais_ids or []:
+        if colaborador_id and colaborador_id not in destino:
+            destino.append(colaborador_id)
+    return destino
+
+
+def _sincronizar_alocacoes_atividade(atividade, colaboradores_ids):
+    """Mantém a lista de colaboradores vinculados à atividade (N:N)."""
+    desejados = set(colaboradores_ids or [])
+    if atividade.colaborador_id:
+        desejados.add(atividade.colaborador_id)
+
+    atuais = {aloc.colaborador_id: aloc for aloc in atividade.alocacoes}
+    for colaborador_id, aloc in list(atuais.items()):
+        if colaborador_id not in desejados:
+            atividade.alocacoes.remove(aloc)
+
+    for colaborador_id in desejados:
+        if colaborador_id not in atuais:
+            atividade.alocacoes.append(AtividadeColaborador(colaborador_id=colaborador_id))
+
+
+def _filtro_atividade_por_colaborador(colaborador_id):
+    alocado_no_time = db.select(AtividadeColaborador.id).where(
+        AtividadeColaborador.atividade_id == Atividade.id,
+        AtividadeColaborador.colaborador_id == colaborador_id,
+    ).exists()
+    return db.or_(
+        Atividade.colaborador_id == colaborador_id,
+        alocado_no_time,
+    )
 
 
 # ─── Painel ──────────────────────────────────────────────────────────────────
@@ -480,7 +542,15 @@ def cadastros():
 @requer_coordenacao
 def atividades_lista():
     status_filtro = request.args.get("status", "")
-    query = db.select(Atividade).join(Colaborador).order_by(Atividade.criado_em.desc())
+    query = (
+        db.select(Atividade)
+        .options(
+            selectinload(Atividade.colaborador),
+            selectinload(Atividade.alocacoes).selectinload(AtividadeColaborador.colaborador),
+        )
+        .join(Colaborador)
+        .order_by(Atividade.criado_em.desc())
+    )
     if status_filtro:
         query = query.where(Atividade.status == status_filtro)
     atividades = db.session.scalars(query).all()
@@ -502,22 +572,114 @@ def atividades_lista():
 @requer_coordenacao
 def atividades_novo():
     form = AtividadeForm()
-    _popular_choices_atividade(form)
+    _, blocos, ambientes = _popular_choices_atividade(form)
     if form.validate_on_submit():
-        atividade = Atividade(
-            titulo=form.titulo.data.strip(),
-            descricao=form.descricao.data.strip() or None,
-            tipo=form.tipo.data,
-            colaborador_id=form.colaborador_id.data,
-            bloco_id=form.bloco_id.data or None,
-            ambiente_id=form.ambiente_id.data or None,
-            observacoes=form.observacoes.data.strip() or None,
+        ok_loc, bloco_id_final, ambiente_id_final = _normalizar_bloco_ambiente_atividade(form)
+        if not ok_loc:
+            return render_template(
+                "admin/atividades/form.html",
+                form=form,
+                titulo="Nova atividade",
+                atividade=None,
+                blocos_atividade=blocos,
+                ambientes_atividade=ambientes,
+            )
+
+        modo_lote = form.modo_lote.data or "unica"
+        colaboradores_destino = _normalizar_colaboradores_destino(
+            form.colaborador_id.data,
+            form.colaboradores_ids.data,
         )
-        db.session.add(atividade)
+
+        if modo_lote in {"compartilhada", "replicar", "dividir"} and len(colaboradores_destino) < 2:
+            flash(
+                "Selecione ao menos 2 colaboradores (incluindo o principal) para este modo de criação.",
+                "warning",
+            )
+            return render_template(
+                "admin/atividades/form.html",
+                form=form,
+                titulo="Nova atividade",
+                atividade=None,
+                blocos_atividade=blocos,
+                ambientes_atividade=ambientes,
+            )
+
+        titulo_base = form.titulo.data.strip()
+        descricao_base = form.descricao.data.strip() or None
+        observacoes_base = form.observacoes.data.strip() or None
+        atividades_criadas = []
+
+        if modo_lote in {"replicar", "dividir"}:
+            total = len(colaboradores_destino)
+            for idx, colaborador_id in enumerate(colaboradores_destino, start=1):
+                titulo_item = titulo_base
+                observacoes_item = observacoes_base
+
+                if modo_lote == "dividir" and total > 1:
+                    titulo_item = f"{titulo_base} — Parte {idx}/{total}"
+                    prefixo = f"[Divisão automática {idx}/{total}]"
+                    observacoes_item = (
+                        f"{prefixo} {observacoes_base}" if observacoes_base else prefixo
+                    )
+
+                atividade = Atividade(
+                    titulo=titulo_item,
+                    descricao=descricao_base,
+                    tipo=form.tipo.data,
+                    colaborador_id=colaborador_id,
+                    bloco_id=bloco_id_final,
+                    ambiente_id=ambiente_id_final,
+                    observacoes=observacoes_item,
+                )
+                _sincronizar_alocacoes_atividade(atividade, [colaborador_id])
+                db.session.add(atividade)
+                atividades_criadas.append(atividade)
+        else:
+            # Atividade única (individual) ou compartilhada (dupla/trio/etc)
+            colaboradores_vinculados = (
+                colaboradores_destino if modo_lote == "compartilhada" else [form.colaborador_id.data]
+            )
+            atividade = Atividade(
+                titulo=titulo_base,
+                descricao=descricao_base,
+                tipo=form.tipo.data,
+                colaborador_id=form.colaborador_id.data,
+                bloco_id=bloco_id_final,
+                ambiente_id=ambiente_id_final,
+                observacoes=observacoes_base,
+            )
+            _sincronizar_alocacoes_atividade(atividade, colaboradores_vinculados)
+            db.session.add(atividade)
+            atividades_criadas.append(atividade)
+
         db.session.commit()
-        flash(f"Atividade '{atividade.titulo}' criada.", "success")
+        if modo_lote == "compartilhada":
+            flash(
+                f"Atividade compartilhada criada para {len(colaboradores_destino)} colaboradores.",
+                "success",
+            )
+        elif len(atividades_criadas) == 1:
+            flash(f"Atividade '{atividades_criadas[0].titulo}' criada.", "success")
+        elif modo_lote == "dividir":
+            flash(
+                f"{len(atividades_criadas)} atividades criadas com divisão automática.",
+                "success",
+            )
+        else:
+            flash(
+                f"{len(atividades_criadas)} atividades criadas em lote para os colaboradores selecionados.",
+                "success",
+            )
         return redirect(url_for("admin.atividades_lista"))
-    return render_template("admin/atividades/form.html", form=form, titulo="Nova atividade", atividade=None)
+    return render_template(
+        "admin/atividades/form.html",
+        form=form,
+        titulo="Nova atividade",
+        atividade=None,
+        blocos_atividade=blocos,
+        ambientes_atividade=ambientes,
+    )
 
 
 @bp.route("/atividades/<int:id>/editar", methods=["GET", "POST"])
@@ -526,20 +688,46 @@ def atividades_novo():
 def atividades_editar(id):
     atividade = db.get_or_404(Atividade, id)
     form = AtividadeForm(obj=atividade)
-    _popular_choices_atividade(form)
+    _, blocos, ambientes = _popular_choices_atividade(form)
+    if request.method == "GET":
+        form.colaboradores_ids.data = [
+            c.id for c in atividade.colaboradores_designados if c.id != atividade.colaborador_id
+        ]
+
     if form.validate_on_submit():
+        ok_loc, bloco_id_final, ambiente_id_final = _normalizar_bloco_ambiente_atividade(form)
+        if not ok_loc:
+            return render_template(
+                "admin/atividades/form.html",
+                form=form,
+                titulo="Editar atividade",
+                atividade=atividade,
+                blocos_atividade=blocos,
+                ambientes_atividade=ambientes,
+            )
+
         atividade.titulo = form.titulo.data.strip()
         atividade.descricao = form.descricao.data.strip() or None
         atividade.tipo = form.tipo.data
         atividade.colaborador_id = form.colaborador_id.data
-        atividade.bloco_id = form.bloco_id.data or None
-        atividade.ambiente_id = form.ambiente_id.data or None
+        atividade.bloco_id = bloco_id_final
+        atividade.ambiente_id = ambiente_id_final
         atividade.observacoes = form.observacoes.data.strip() or None
+        colaboradores_destino = _normalizar_colaboradores_destino(
+            form.colaborador_id.data,
+            form.colaboradores_ids.data,
+        )
+        _sincronizar_alocacoes_atividade(atividade, colaboradores_destino)
         db.session.commit()
         flash(f"Atividade '{atividade.titulo}' atualizada.", "success")
         return redirect(url_for("admin.atividades_lista"))
     return render_template(
-        "admin/atividades/form.html", form=form, titulo="Editar atividade", atividade=atividade
+        "admin/atividades/form.html",
+        form=form,
+        titulo="Editar atividade",
+        atividade=atividade,
+        blocos_atividade=blocos,
+        ambientes_atividade=ambientes,
     )
 
 
@@ -550,12 +738,16 @@ def atividades_validacao():
     colaborador_id_filtro = request.args.get("colaborador_id", type=int)
     query = (
         db.select(Atividade)
+        .options(
+            selectinload(Atividade.colaborador),
+            selectinload(Atividade.alocacoes).selectinload(AtividadeColaborador.colaborador),
+        )
         .join(Colaborador)
         .where(Atividade.status == "concluida")
         .order_by(Atividade.concluido_em.asc())
     )
     if colaborador_id_filtro:
-        query = query.where(Atividade.colaborador_id == colaborador_id_filtro)
+        query = query.where(_filtro_atividade_por_colaborador(colaborador_id_filtro))
     atividades = db.session.scalars(query).all()
     colaboradores = db.session.scalars(
         db.select(Colaborador).where(Colaborador.ativo == True)  # noqa: E712

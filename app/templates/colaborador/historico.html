@@ -116,6 +116,9 @@
             <span class="text-xs text-gray-400">{{ dict(at.TIPOS).get(at.tipo, at.tipo) }}</span>
           </div>
           <p class="text-sm font-semibold text-gray-800 leading-snug">{{ at.titulo }}</p>
+          {% if at.total_colaboradores > 1 %}
+          <p class="text-xs text-gray-500 mt-0.5">Equipe: {{ at.colaboradores_nomes }}</p>
+          {% endif %}
           {% if at.descricao %}
           <p class="text-xs text-gray-400 mt-0.5 line-clamp-1">{{ at.descricao }}</p>
           {% endif %}

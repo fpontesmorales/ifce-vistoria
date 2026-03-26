@@ -13,6 +13,11 @@ class Colaborador(db.Model):
     # Relacionamentos
     usuario = db.relationship("Usuario", back_populates="colaborador")
     atividades = db.relationship("Atividade", foreign_keys="Atividade.colaborador_id", back_populates="colaborador")
+    alocacoes_atividade = db.relationship(
+        "AtividadeColaborador",
+        back_populates="colaborador",
+        cascade="all, delete-orphan",
+    )
     vistorias = db.relationship("Vistoria", back_populates="colaborador")
 
     def __repr__(self):

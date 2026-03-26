@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
+from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.models.colaborador import Colaborador
-from app.models.atividade import Atividade
+from app.models.atividade import Atividade, AtividadeColaborador
 from app.models.vistoria import Vistoria
 from app.models.ocorrencia import Ocorrencia
 from app.models.bloco import Bloco
@@ -24,6 +25,17 @@ _LABEL_PROXIMO = {
 }
 
 
+def _filtro_atividade_para_colaborador(colaborador_id):
+    alocado_no_time = db.select(AtividadeColaborador.id).where(
+        AtividadeColaborador.atividade_id == Atividade.id,
+        AtividadeColaborador.colaborador_id == colaborador_id,
+    ).exists()
+    return db.or_(
+        Atividade.colaborador_id == colaborador_id,
+        alocado_no_time,
+    )
+
+
 # ─── Painel ───────────────────────────────────────────────────────────────────
 
 @bp.route("/")
@@ -34,14 +46,14 @@ def painel():
 
     pendentes = db.session.scalar(
         db.select(db.func.count(Atividade.id)).where(
-            Atividade.colaborador_id == colaborador.id,
+            _filtro_atividade_para_colaborador(colaborador.id),
             Atividade.status == "pendente",
         )
     ) or 0
 
     em_andamento = db.session.scalar(
         db.select(db.func.count(Atividade.id)).where(
-            Atividade.colaborador_id == colaborador.id,
+            _filtro_atividade_para_colaborador(colaborador.id),
             Atividade.status == "em_andamento",
         )
     ) or 0
@@ -61,8 +73,12 @@ def painel():
     # Atividades ativas (pendente + em_andamento), mais recentes primeiro
     atividades_ativas = db.session.scalars(
         db.select(Atividade)
+        .options(
+            selectinload(Atividade.colaborador),
+            selectinload(Atividade.alocacoes).selectinload(AtividadeColaborador.colaborador),
+        )
         .where(
-            Atividade.colaborador_id == colaborador.id,
+            _filtro_atividade_para_colaborador(colaborador.id),
             Atividade.status.in_(["pendente", "em_andamento"]),
         )
         .order_by(Atividade.criado_em.desc())
@@ -121,9 +137,15 @@ def painel():
 def atividades():
     colaborador = get_colaborador_ou_404()
 
-    filtro = db.select(Atividade).where(
-        Atividade.colaborador_id == colaborador.id
-    ).order_by(Atividade.criado_em.desc())
+    filtro = (
+        db.select(Atividade)
+        .options(
+            selectinload(Atividade.colaborador),
+            selectinload(Atividade.alocacoes).selectinload(AtividadeColaborador.colaborador),
+        )
+        .where(_filtro_atividade_para_colaborador(colaborador.id))
+        .order_by(Atividade.criado_em.desc())
+    )
 
     todas = db.session.scalars(filtro).all()
 
@@ -152,7 +174,7 @@ def atividade_status(id):
     atividade = db.session.scalar(
         db.select(Atividade).where(
             Atividade.id == id,
-            Atividade.colaborador_id == colaborador.id,
+            _filtro_atividade_para_colaborador(colaborador.id),
         )
     )
 
@@ -344,7 +366,11 @@ def historico():
 
     atividades_hist = db.session.scalars(
         db.select(Atividade)
-        .where(Atividade.colaborador_id == colaborador.id)
+        .options(
+            selectinload(Atividade.colaborador),
+            selectinload(Atividade.alocacoes).selectinload(AtividadeColaborador.colaborador),
+        )
+        .where(_filtro_atividade_para_colaborador(colaborador.id))
         .order_by(Atividade.criado_em.desc())
     ).all()
 
