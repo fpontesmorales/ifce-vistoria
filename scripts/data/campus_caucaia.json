@@ -1,0 +1,237 @@
+{
+  "_meta": {
+    "campus": "IFCE Campus Caucaia",
+    "fonte": "estrutura-export.json (SIDAP)",
+    "versao": "2.0",
+    "instrucoes": [
+      "Dados reais exportados do SIDAP.",
+      "Nomes de ambientes devem ser únicos dentro do mesmo bloco.",
+      "O campo 'ordem' controla a sequência de exibição nas listagens.",
+      "Para desativar um item sem removê-lo, defina 'ativo': false."
+    ]
+  },
+  "blocos": [
+    {
+      "nome": "Bloco Administrativo",
+      "descricao": "Sigla: ADM",
+      "ordem": 1,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Recepção", "ordem": 1 },
+        { "nome": "CCA (Coordenação de Controle Acadêmico)", "ordem": 2 },
+        { "nome": "Copa", "ordem": 3 },
+        { "nome": "Cisterna", "ordem": 4 },
+        { "nome": "Representação Estudantil", "ordem": 5 },
+        { "nome": "Entrada de Facilidades", "ordem": 6 },
+        { "nome": "Sala de Videoconferência", "ordem": 7 },
+        { "nome": "Laboratório Soldagem", "ordem": 8 },
+        { "nome": "Laboratório Soldagem Interna", "ordem": 9 },
+        { "nome": "Laboratório Soldagem Saída", "ordem": 10 },
+        { "nome": "Laboratório Soldagem Anexo", "ordem": 11 },
+        { "nome": "Copa Servidores", "ordem": 12 },
+        { "nome": "Banheiro Copa", "ordem": 13 },
+        { "nome": "LAMPA (Laboratório Matemática Pura e Aplicada)", "ordem": 14 },
+        { "nome": "LAMATE (Laboratório de Matemática e Ensino)", "ordem": 15 },
+        { "nome": "LEST (Laboratório Ergonomia e Segurança doTrabalho)", "ordem": 16 },
+        { "nome": "LEST Interna", "ordem": 17 },
+        { "nome": "Laboratório de Empreendedorismo e Inovação", "ordem": 18 },
+        { "nome": "Laboratório Empreendedorismo e Inovação Interna", "ordem": 19 },
+        { "nome": "Laboratório de Metrologia", "ordem": 20 },
+        { "nome": "NAPNE", "ordem": 21 },
+        { "nome": "NAPNE/NEABI", "ordem": 22 },
+        { "nome": "Sala de Amamentação", "ordem": 23 },
+        { "nome": "Laboratório Robótica", "ordem": 24 },
+        { "nome": "Laboratório Robótica Interna", "ordem": 25 },
+        { "nome": "Laboratório de Música", "ordem": 26 },
+        { "nome": "Laboratório de Projetos e Processos", "ordem": 27 },
+        { "nome": "Laboratório de Projetos e Processos Interna", "ordem": 28 },
+        { "nome": "LAPOCID", "ordem": 29 },
+        { "nome": "LAPOCID Interna", "ordem": 30 },
+        { "nome": "Laboratório de Materiais", "ordem": 31 },
+        { "nome": "Laboratório de Materiais Interna", "ordem": 32 },
+        { "nome": "Sala dos Professores", "ordem": 33 },
+        { "nome": "Sala dos Professores Copa", "ordem": 34 },
+        { "nome": "Auditório", "ordem": 35 },
+        { "nome": "Auditório Audio Vídeo", "ordem": 36 },
+        { "nome": "Auditório Ar Condicionado", "ordem": 37 },
+        { "nome": "Auditório Saída de Emergência", "ordem": 38 },
+        { "nome": "SAD (Setor de Atendimento ao Discente)", "ordem": 39 },
+        { "nome": "Sala de Aula 01", "ordem": 40 },
+        { "nome": "Sala de Aula 02", "ordem": 41 },
+        { "nome": "Sala de Aula 03", "ordem": 42 },
+        { "nome": "Sala de Aula 04", "ordem": 43 },
+        { "nome": "Biblioteca", "ordem": 44 },
+        { "nome": "Biblioteca Administração", "ordem": 45 },
+        { "nome": "Biblioteca Sala de Estudo 1", "ordem": 46 },
+        { "nome": "Biblioteca Sala de Estudo 2", "ordem": 47 },
+        { "nome": "Banheiro Feminino", "ordem": 48 },
+        { "nome": "Banheiro Masculino", "ordem": 49 },
+        { "nome": "Banheiro PCD", "ordem": 50 }
+      ]
+    },
+    {
+      "nome": "Bloco Didático 1 - Tércio",
+      "descricao": "Sigla: BD1",
+      "ordem": 2,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Laboratório de Química Orgânica e Inorgânica", "ordem": 1 },
+        { "nome": "Laboratório de Biologia", "ordem": 2 },
+        { "nome": "Laboratório de Microbiologia", "ordem": 3 },
+        { "nome": "Laboratório de Instrumentação Analítica", "ordem": 4 },
+        { "nome": "Laboratório de Química Geral", "ordem": 5 },
+        { "nome": "Laboratório de Química Geral Interna", "ordem": 6 },
+        { "nome": "Banheiro Feminino Inferior", "ordem": 7 },
+        { "nome": "Banheiro PcD Inferior", "ordem": 8 },
+        { "nome": "Banheiro Masculino Inferior", "ordem": 9 },
+        { "nome": "Laboratório de Automação", "ordem": 10 },
+        { "nome": "Laboratório de Comandos", "ordem": 11 },
+        { "nome": "Laboratório de Eletroeletrônica", "ordem": 12 },
+        { "nome": "Laboratório de Física", "ordem": 13 },
+        { "nome": "Sala de Aula 01", "ordem": 14 },
+        { "nome": "Sala de Aula 02", "ordem": 15 },
+        { "nome": "Sala de Aula 03", "ordem": 16 },
+        { "nome": "Sala de Aula 04", "ordem": 17 },
+        { "nome": "Sala de Aula 05", "ordem": 18 },
+        { "nome": "Sala de Aula 06", "ordem": 19 },
+        { "nome": "Laboratório de Informática", "ordem": 20 },
+        { "nome": "Sala de Aula 07", "ordem": 21 },
+        { "nome": "Sala de Aula 08", "ordem": 22 },
+        { "nome": "Banheiro Feminino Superior", "ordem": 23 },
+        { "nome": "Banheiro PCD Superior", "ordem": 24 },
+        { "nome": "Banheiro Masculino Superior", "ordem": 25 },
+        { "nome": "Laje", "ordem": 26 },
+        { "nome": "Casa de Gás", "ordem": 27 },
+        { "nome": "Compressor", "ordem": 28 },
+        { "nome": "Casa de Gás Laboratorial", "ordem": 29 },
+        { "nome": "Casa de Gás GLP", "ordem": 30 },
+        { "nome": "Painel Solar", "ordem": 31 }
+      ]
+    },
+    {
+      "nome": "Bloco Didático 2",
+      "descricao": "Sigla: BD2",
+      "ordem": 3,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Sala de Aula 01", "ordem": 1 },
+        { "nome": "Sala de Aula 02", "ordem": 2 },
+        { "nome": "Sala de Aula 03", "ordem": 3 },
+        { "nome": "Sala de Aula 04", "ordem": 4 },
+        { "nome": "Sala de Aula 05", "ordem": 5 },
+        { "nome": "Sala de Aula 06", "ordem": 6 },
+        { "nome": "Refeitório", "ordem": 7 },
+        { "nome": "Banheiro Feminino", "ordem": 8 },
+        { "nome": "Banheiro Masculino", "ordem": 9 },
+        { "nome": "Banheiro PCD", "ordem": 10 },
+        { "nome": "Refeitório - Cozinha", "ordem": 11 },
+        { "nome": "Refeitório - Casa de Gás", "ordem": 12 }
+      ]
+    },
+    {
+      "nome": "Departamento de Ensino",
+      "descricao": "Sigla: BEN",
+      "ordem": 4,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Porta de acesso ao bloco", "ordem": 1 },
+        { "nome": "Coordenação de Cursos Superiores", "ordem": 2 },
+        { "nome": "Coordenação de Cursos Técnicos", "ordem": 3 },
+        { "nome": "Departamento de Ensino", "ordem": 4 },
+        { "nome": "NTEaD/ Assist. do DE", "ordem": 5 },
+        { "nome": "CCA (Coordenação de Controle Acadêmico)", "ordem": 6 }
+      ]
+    },
+    {
+      "nome": "Assistência Estudantil e CTP",
+      "descricao": "Sigla: BAE",
+      "ordem": 5,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Porta de acesso ao bloco da AE e CTP", "ordem": 1 },
+        { "nome": "Coordenação Técnico-Pedagógica", "ordem": 2 },
+        { "nome": "Gabinete da direção-geral/ SECOM/ CPOS/ COEX", "ordem": 3 },
+        { "nome": "Direção-geral", "ordem": 4 },
+        { "nome": "Porta de acesso Assistência Estudantil", "ordem": 5 },
+        { "nome": "Psicologia", "ordem": 6 },
+        { "nome": "Nutrição", "ordem": 7 },
+        { "nome": "Serviço Social", "ordem": 8 },
+        { "nome": "Enfermagem", "ordem": 9 },
+        { "nome": "Banheiro 1", "ordem": 10 },
+        { "nome": "Banheiro 2", "ordem": 11 }
+      ]
+    },
+    {
+      "nome": "Departamento de Administração",
+      "descricao": "Sigla: DAP",
+      "ordem": 6,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Porta de Acesso ao Depto de Adm.", "ordem": 1 },
+        { "nome": "Infraestrutura, TI e CAP", "ordem": 2 },
+        { "nome": "Coordenação de Aquisições e Contratos/SEOF", "ordem": 3 },
+        { "nome": "Departamento de Administração", "ordem": 4 },
+        { "nome": "Patrimônio", "ordem": 5 },
+        { "nome": "Almoxarifado", "ordem": 6 },
+        { "nome": "Banheiro 1", "ordem": 7 },
+        { "nome": "Banheiro 2", "ordem": 8 }
+      ]
+    },
+    {
+      "nome": "Quadra Poliesportiva",
+      "descricao": "Sigla: GIN",
+      "ordem": 7,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Entrada", "ordem": 1 },
+        { "nome": "Portão da Quadra", "ordem": 2 },
+        { "nome": "Depósito Ginásio", "ordem": 3 },
+        { "nome": "Vestiário Feminino", "ordem": 4 },
+        { "nome": "Vestiário Masculino", "ordem": 5 },
+        { "nome": "Sala de Esporte", "ordem": 6 },
+        { "nome": "Portão Atrás", "ordem": 7 }
+      ]
+    },
+    {
+      "nome": "Variadas",
+      "descricao": "Sigla: VAR — portões, container, áreas externas",
+      "ordem": 8,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Motor Portão Pequeno", "ordem": 1 },
+        { "nome": "Motor Portão Grande", "ordem": 2 },
+        { "nome": "Portão Lateral", "ordem": 3 },
+        { "nome": "Portão Antigo", "ordem": 4 },
+        { "nome": "Container", "ordem": 5 },
+        { "nome": "E-Tec", "ordem": 6 },
+        { "nome": "Estacionamento", "ordem": 7 },
+        { "nome": "Área de Convivência", "ordem": 8 }
+      ]
+    },
+    {
+      "nome": "Lixeiras",
+      "descricao": "Sigla: LIX — portões internos e externos",
+      "ordem": 9,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Portão Interno 1", "ordem": 1 },
+        { "nome": "Portão Interno 2", "ordem": 2 },
+        { "nome": "Portão Interno 3", "ordem": 3 },
+        { "nome": "Portão Interno 4", "ordem": 4 },
+        { "nome": "Portão Externo 1", "ordem": 5 },
+        { "nome": "Portão Externo 2", "ordem": 6 }
+      ]
+    },
+    {
+      "nome": "Depósitos",
+      "descricao": "Sigla: DEP",
+      "ordem": 10,
+      "ativo": true,
+      "ambientes": [
+        { "nome": "Depósito Patrimônio", "ordem": 1 },
+        { "nome": "Depósito Limpeza", "ordem": 2 },
+        { "nome": "Depósito Infraestrutura", "ordem": 3 }
+      ]
+    }
+  ]
+}

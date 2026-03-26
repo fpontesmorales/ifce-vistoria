@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import campo %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">{{ titulo }}</h1>
+    {% if colaborador %}
+      <p class="text-sm text-gray-400 mt-0.5">ID #{{ colaborador.id }}</p>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('admin.colaboradores_lista') }}"
+     class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Voltar para colaboradores
+  </a>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-xl">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    {% if colaborador %}
+      {# Edição: usuário fixo, apenas informativo #}
+      <div class="mb-5">
+        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Usuário vinculado</label>
+        <div class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500">
+          {{ colaborador.usuario.nome }} —
+          <span class="font-mono">{{ colaborador.usuario.username }}</span>
+        </div>
+        <p class="text-xs text-gray-400 mt-1.5">O vínculo de usuário não pode ser alterado.</p>
+        <input type="hidden" name="usuario_id" value="{{ colaborador.usuario_id }}">
+      </div>
+    {% else %}
+      {{ campo(form.usuario_id, hint='Apenas usuários com perfil Colaborador ainda não vinculados.') }}
+    {% endif %}
+
+    {{ campo(form.nome_exibicao, hint='Nome exibido nas vistorias e atividades.') }}
+    {{ campo(form.funcao, hint='Opcional. Ex.: Servente, Eletricista, Vigilante.') }}
+
+    <div class="flex items-center gap-3 pt-2 border-t border-gray-100 mt-6">
+      {{ form.submit(
+        class="bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-5 py-2.5
+               rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2"
+      ) }}
+      <a href="{{ url_for('admin.colaboradores_lista') }}"
+         class="text-sm font-medium text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-lg
+                border border-gray-200 hover:bg-gray-50 transition-colors">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{# Navegação interna do painel administrativo #}
+{% set ep = request.endpoint or '' %}
+{% set links = [
+  (url_for('admin.painel'),              'Painel',        'painel'),
+  (url_for('admin.ocorrencias_lista'),   'Ocorrências',   'ocorrencias'),
+  (url_for('admin.atividades_lista'),    'Atividades',    'atividades'),
+  (url_for('admin.atividades_validacao'),'Validação',     'validacao'),
+  (url_for('admin.blocos_lista'),        'Blocos',        'blocos'),
+  (url_for('admin.ambientes_lista'),     'Ambientes',     'ambientes'),
+  (url_for('admin.colaboradores_lista'), 'Colaboradores', 'colaboradores'),
+  (url_for('admin.usuarios_lista'),      'Usuários',      'usuarios'),
+  (url_for('admin.dados'),               'Dados',         'dados'),
+] %}
+
+<div class="mb-6 pb-4 border-b border-gray-200">
+
+  {# ── Cabeçalho mobile com toggle ── #}
+  <div class="flex items-center justify-between md:hidden mb-2">
+    {# Mostra o item ativo como título no mobile #}
+    {% set label_ativo = 'Administração' %}
+    {% for href, label, kw in links %}
+      {% if kw in ep %}{% set label_ativo = label %}{% endif %}
+    {% endfor %}
+    <span class="text-xs font-semibold text-gray-600 uppercase tracking-wide">{{ label_ativo }}</span>
+    <button id="subnav-toggle" type="button"
+            class="flex items-center gap-1.5 text-xs font-medium text-gray-500
+                   hover:text-gray-800 bg-gray-100 hover:bg-gray-200
+                   px-3 py-1.5 rounded-md transition"
+            aria-expanded="false">
+      <span id="subnav-btn-label">Menu</span>
+      <svg id="subnav-icon" class="w-3.5 h-3.5 transition-transform duration-200"
+           fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+  </div>
+
+  {# ── Links de navegação ── #}
+  <nav id="subnav-links" class="md:flex items-center gap-1 flex-wrap" style="display:none">
+    {% for href, label, kw in links %}
+      {% set ativo = (kw in ep) %}
+      <a href="{{ href }}"
+         class="block md:inline-flex px-3 py-2 rounded-md text-sm font-medium transition-colors
+                {% if ativo %}bg-ifce text-white shadow-sm{% else %}text-gray-500 hover:text-gray-800 hover:bg-gray-100{% endif %}">
+        {{ label }}
+      </a>
+    {% endfor %}
+  </nav>
+
+</div>
+
+<script>
+  (function () {
+    var btn   = document.getElementById('subnav-toggle');
+    var nav   = document.getElementById('subnav-links');
+    var icon  = document.getElementById('subnav-icon');
+    var lbl   = document.getElementById('subnav-btn-label');
+    if (!btn || !nav) return;
+
+    // Em telas >= md (768px), sempre mostrar sem depender do JS
+    function isMobile() { return window.innerWidth < 768; }
+
+    function applyState() {
+      if (!isMobile()) {
+        nav.style.display = 'flex';
+        nav.style.flexWrap = 'wrap';
+      }
+    }
+
+    applyState();
+    window.addEventListener('resize', applyState);
+
+    btn.addEventListener('click', function () {
+      var open = nav.style.display === 'flex';
+      if (open) {
+        nav.style.display = 'none';
+        icon.style.transform = '';
+        lbl.textContent = 'Menu';
+        btn.setAttribute('aria-expanded', 'false');
+      } else {
+        nav.style.display = 'flex';
+        nav.style.flexWrap = 'wrap';
+        nav.style.gap = '0.25rem';
+        icon.style.transform = 'rotate(180deg)';
+        lbl.textContent = 'Fechar';
+        btn.setAttribute('aria-expanded', 'true');
+      }
+    });
+  })();
+</script>

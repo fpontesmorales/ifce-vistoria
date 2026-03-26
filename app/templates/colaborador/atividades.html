@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Minhas Atividades{% endblock %}
+
+{% block extra_head %}
+<style>
+  .card-atividade {
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .card-atividade:hover {
+    box-shadow: 0 2px 8px rgba(0,102,51,0.08);
+    border-color: #b6d9c7;
+  }
+  .btn-avancar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    border: none;
+  }
+  .btn-avancar:active { transform: scale(0.97); }
+  .btn-iniciar  { background: #eff6ff; color: #1d4ed8; }
+  .btn-iniciar:hover  { background: #dbeafe; }
+  .btn-concluir { background: #f0fdf4; color: #15803d; }
+  .btn-concluir:hover { background: #dcfce7; }
+
+  /* Filtro tab */
+  .tab-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: 1.5px solid transparent;
+  }
+  .tab-btn.ativo, .tab-btn:hover {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+  .tab-btn.ativo { border-color: #4ade80; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Cabeçalho ──────────────────────────────────────────────────────────────── #}
+<div class="mb-6">
+  <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
+    <a href="{{ url_for('colaborador.painel') }}" class="hover:text-ifce">Painel</a>
+    <span>/</span>
+    <span class="text-gray-600 font-medium">Atividades</span>
+  </div>
+  <h1 class="text-2xl font-bold text-gray-900">Minhas atividades</h1>
+  <p class="text-sm text-gray-500 mt-0.5">
+    {{ colaborador.nome_exibicao }}
+    {% if colaborador.funcao %} · {{ colaborador.funcao }}{% endif %}
+  </p>
+</div>
+
+{# ── Cards de contagem ───────────────────────────────────────────────────────── #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  {% set config_status = [
+    ('pendente',     'Pendentes',    'text-amber-500',  contagens.pendente),
+    ('em_andamento', 'Em andamento', 'text-blue-600',   contagens.em_andamento),
+    ('concluida',    'Concluídas',   'text-ifce',       contagens.concluida),
+    ('validada',     'Validadas',    'text-emerald-600', contagens.validada),
+  ] %}
+  {% for slug, label, cor, total in config_status %}
+  <button type="button" onclick="filtrar('{{ slug }}')"
+          class="tab-btn text-left bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3 w-full"
+          id="tab-{{ slug }}">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{{ label }}</p>
+    <p class="text-2xl font-bold {{ cor }}">{{ total }}</p>
+  </button>
+  {% endfor %}
+</div>
+
+{# ── Botão "todas" ────────────────────────────────────────────────────────────── #}
+<div class="mb-4 flex items-center justify-between">
+  <button type="button" onclick="filtrar('todas')" id="tab-todas"
+          class="tab-btn ativo">Todas ({{ atividades | length }})</button>
+  <a href="{{ url_for('colaborador.historico') }}"
+     class="text-xs text-gray-400 hover:text-ifce">Ver histórico completo →</a>
+</div>
+
+{# ── Lista de atividades ──────────────────────────────────────────────────────── #}
+{% if atividades %}
+<div class="space-y-3" id="lista-atividades">
+  {% for at in atividades %}
+  <div class="card-atividade bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4
+              data-status" data-status="{{ at.status }}">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+
+      {# Corpo do card #}
+      <div class="min-w-0 flex-1">
+        <div class="flex items-center gap-2 flex-wrap mb-1">
+          <span class="status-badge badge-{{ at.status }}">
+            {{ dict(at.STATUS).get(at.status, at.status) }}
+          </span>
+          <span class="tipo-badge">{{ dict(at.TIPOS).get(at.tipo, at.tipo) }}</span>
+        </div>
+
+        <p class="text-base font-semibold text-gray-900 leading-snug mt-1">{{ at.titulo }}</p>
+
+        {% if at.descricao %}
+        <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ at.descricao }}</p>
+        {% endif %}
+
+        <div class="flex items-center gap-3 mt-2 flex-wrap text-xs text-gray-400">
+          {% if at.bloco %}
+          <span class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+            </svg>
+            {{ at.bloco.nome }}
+          </span>
+          {% endif %}
+          {% if at.ambiente %}
+          <span>· {{ at.ambiente.nome }}</span>
+          {% endif %}
+          <span class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Criada {{ at.criado_em.strftime('%d/%m/%Y') }}
+          </span>
+          {% if at.iniciado_em %}
+          <span>· Iniciada {{ at.iniciado_em.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+          {% if at.concluido_em %}
+          <span>· Concluída {{ at.concluido_em.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+          {% if at.validado_em %}
+          <span>· Validada {{ at.validado_em.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+        </div>
+
+        {% if at.observacoes %}
+        <p class="text-xs text-gray-400 italic mt-2 border-l-2 border-gray-200 pl-3">
+          {{ at.observacoes }}
+        </p>
+        {% endif %}
+      </div>
+
+      {# Ação de avançar status #}
+      <div class="flex-shrink-0 self-end sm:self-start">
+        {% if at.status in proximos_status %}
+        <form action="{{ url_for('colaborador.atividade_status', id=at.id) }}" method="POST">
+          {% if at.status == 'pendente' %}
+          <button type="submit" class="btn-avancar btn-iniciar">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M14.752 11.168l-6.518-3.759A1 1 0 007 8.241v7.518a1 1 0 001.234.97l6.518-1.66A1 1 0 0016 14.1v-2.2a1 1 0 00-.752-.968l-.496-.134z"/>
+            </svg>
+            Iniciar
+          </button>
+          {% elif at.status == 'em_andamento' %}
+          <button type="submit" class="btn-avancar btn-concluir">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M5 13l4 4L19 7"/>
+            </svg>
+            Concluir
+          </button>
+          {% endif %}
+        </form>
+        {% elif at.status == 'concluida' %}
+        <span class="text-xs text-gray-400 italic">Aguardando validação</span>
+        {% elif at.status == 'validada' %}
+        <span class="flex items-center gap-1 text-xs font-semibold text-emerald-600">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Validada
+        </span>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-16 text-center">
+  <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+  </svg>
+  <p class="text-sm font-medium text-gray-500">Nenhuma atividade atribuída ainda.</p>
+  <p class="text-xs text-gray-400 mt-1">A coordenação atribuirá atividades a você em breve.</p>
+</div>
+{% endif %}
+
+<script>
+function filtrar(status) {
+  const cards = document.querySelectorAll('#lista-atividades [data-status]');
+  const tabs = document.querySelectorAll('[id^="tab-"]');
+
+  tabs.forEach(t => t.classList.remove('ativo'));
+  const tabAlvo = document.getElementById('tab-' + status);
+  if (tabAlvo) tabAlvo.classList.add('ativo');
+
+  cards.forEach(card => {
+    if (status === 'todas' || card.getAttribute('data-status') === status) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+</script>
+
+{% endblock %}

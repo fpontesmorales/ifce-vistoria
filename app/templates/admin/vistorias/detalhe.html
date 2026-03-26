@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Vistoria #{{ vistoria.id }}{% endblock %}
+
+{% block content %}
+
+{# ── Breadcrumb + cabeçalho ── #}
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <p class="text-xs text-gray-400 mb-1">
+      <a href="{{ url_for('admin.painel') }}" class="hover:text-ifce transition">Painel</a>
+      <span class="mx-1 text-gray-300">›</span>
+      <span class="text-gray-600 font-medium">Vistoria #{{ vistoria.id }}</span>
+    </p>
+    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Vistoria #{{ vistoria.id }}</h1>
+    <p class="text-sm text-gray-400 mt-0.5">
+      Registrada em {{ vistoria.data_vistoria.strftime('%d/%m/%Y às %H:%M') }}
+    </p>
+  </div>
+  <a href="{{ url_for('admin.painel') }}"
+     class="flex-shrink-0 text-sm text-gray-500 hover:text-ifce border border-gray-200 rounded px-3 py-1.5 hover:border-ifce transition">
+    ← Painel
+  </a>
+</div>
+
+{# ── Grade principal ── #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+  {# ── Coluna esquerda — Dados da vistoria + ocorrências ── #}
+  <div class="lg:col-span-2 space-y-4">
+
+    {# Dados gerais #}
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Dados da vistoria</p>
+      </div>
+      <div class="px-4 py-3 grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Bloco</p>
+          <p class="text-sm font-semibold text-gray-800">{{ vistoria.bloco.nome }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Ambiente</p>
+          <p class="text-sm font-semibold text-gray-800">{{ vistoria.ambiente.nome }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Colaborador</p>
+          <p class="text-sm text-gray-700">{{ vistoria.colaborador.nome_exibicao }}</p>
+          {% if vistoria.colaborador.funcao %}
+          <p class="text-xs text-gray-400">{{ vistoria.colaborador.funcao }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Data</p>
+          <p class="text-sm text-gray-700">{{ vistoria.data_vistoria.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Situação geral</p>
+          {% if vistoria.situacao_geral == 'ok' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700">OK — sem pendências</span>
+          {% else %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700">Com pendência</span>
+          {% endif %}
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Status</p>
+          {% if vistoria.status == 'finalizada' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700">Finalizada</span>
+          {% else %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 text-gray-600">Registrada</span>
+          {% endif %}
+        </div>
+        {% if vistoria.observacoes %}
+        <div class="col-span-2">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Observações</p>
+          <p class="text-sm text-gray-600 italic leading-relaxed whitespace-pre-line">{{ vistoria.observacoes }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Ocorrências vinculadas #}
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">
+          Ocorrências registradas
+        </p>
+        <span class="text-xs text-gray-400">{{ vistoria.ocorrencias | length }} ocorrência{{ 's' if vistoria.ocorrencias | length != 1 else '' }}</span>
+      </div>
+
+      {% if vistoria.ocorrencias %}
+      <ul class="divide-y divide-gray-50">
+        {% for oc in vistoria.ocorrencias %}
+        {% set sc = {
+          'registrada':  'bg-gray-100 text-gray-600',
+          'em_analise':  'bg-amber-100 text-amber-700',
+          'planejada':   'bg-blue-100 text-blue-700',
+          'executada':   'bg-emerald-100 text-emerald-700',
+          'nao_procede': 'bg-rose-100 text-rose-600',
+        } %}
+        {% set sl = {
+          'registrada': 'Registrada', 'em_analise': 'Em análise',
+          'planejada': 'Planejada', 'executada': 'Executada', 'nao_procede': 'Não procede',
+        } %}
+        {% set cat_labels = {
+          'eletrica': 'Elétrica', 'hidraulica': 'Hidráulica', 'civil': 'Civil',
+          'pintura': 'Pintura', 'esquadrias': 'Esquadrias', 'cobertura': 'Cobertura',
+          'mobiliario': 'Mobiliário', 'limpeza_conservacao': 'Limpeza / Conservação',
+          'seguranca': 'Segurança', 'outros': 'Outros',
+        } %}
+        <li class="px-4 py-3 flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-gray-800">
+              #{{ oc.id }} — {{ cat_labels.get(oc.categoria, oc.categoria) }}
+            </p>
+            <p class="text-sm text-gray-600 mt-0.5 leading-relaxed">
+              {{ oc.descricao[:120] }}{% if oc.descricao | length > 120 %}…{% endif %}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+              Prioridade:
+              <span class="font-semibold
+                {% if oc.prioridade == 'alta' %}text-red-600
+                {% elif oc.prioridade == 'media' %}text-yellow-700
+                {% else %}text-green-700{% endif %}">
+                {{ {'alta':'Alta','media':'Média','baixa':'Baixa'}.get(oc.prioridade, oc.prioridade) }}
+              </span>
+              · Risco:
+              <span class="font-semibold
+                {% if oc.risco == 'alto' %}text-red-600
+                {% elif oc.risco == 'medio' %}text-yellow-700
+                {% else %}text-green-700{% endif %}">
+                {{ {'alto':'Alto','medio':'Médio','baixo':'Baixo'}.get(oc.risco, oc.risco) }}
+              </span>
+            </p>
+          </div>
+          <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ sc.get(oc.status, 'bg-gray-100 text-gray-600') }}">
+              {{ sl.get(oc.status, oc.status) }}
+            </span>
+            <a href="{{ url_for('admin.ocorrencias_detalhe', id=oc.id) }}"
+               class="text-xs text-ifce font-semibold hover:underline">Gerenciar →</a>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="px-4 py-8 text-center">
+        <p class="text-sm text-gray-400">Nenhuma ocorrência registrada nesta vistoria.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  {# ── Coluna direita — Resumo rápido ── #}
+  <div class="lg:col-span-1 space-y-4">
+
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Resumo</p>
+      </div>
+      <div class="px-4 py-3 space-y-3">
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-gray-500">Total de ocorrências</p>
+          <p class="text-sm font-bold text-gray-800">{{ vistoria.ocorrencias | length }}</p>
+        </div>
+        {% set abertas = vistoria.ocorrencias | selectattr('status', 'in', ['registrada','em_analise','planejada']) | list %}
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-gray-500">Em aberto</p>
+          <p class="text-sm font-bold {% if abertas %}text-amber-600{% else %}text-gray-400{% endif %}">{{ abertas | length }}</p>
+        </div>
+        {% set altas = vistoria.ocorrencias | selectattr('prioridade', 'equalto', 'alta') | list %}
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-gray-500">Alta prioridade</p>
+          <p class="text-sm font-bold {% if altas %}text-red-600{% else %}text-gray-400{% endif %}">{{ altas | length }}</p>
+        </div>
+      </div>
+    </div>
+
+    {# Navegação para outros ambientes do mesmo bloco #}
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Navegação</p>
+      </div>
+      <div class="px-4 py-3 space-y-2">
+        <a href="{{ url_for('admin.ocorrencias_lista', bloco_id=vistoria.bloco_id) }}"
+           class="flex items-center justify-between text-sm text-gray-700 hover:text-ifce transition py-1">
+          <span>Ocorrências do bloco</span>
+          <span class="text-gray-400">→</span>
+        </a>
+        <a href="{{ url_for('admin.ocorrencias_lista', ambiente_id=vistoria.ambiente_id) }}"
+           class="flex items-center justify-between text-sm text-gray-700 hover:text-ifce transition py-1">
+          <span>Ocorrências do ambiente</span>
+          <span class="text-gray-400">→</span>
+        </a>
+        <a href="{{ url_for('admin.ocorrencias_lista', colaborador_id=vistoria.colaborador_id) }}"
+           class="flex items-center justify-between text-sm text-gray-700 hover:text-ifce transition py-1">
+          <span>Ocorrências do colaborador</span>
+          <span class="text-gray-400">→</span>
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

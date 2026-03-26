@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Exportar / Importar Dados{% endblock %}
+
+{% block content %}
+
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Exportar / Importar Dados</h1>
+  <p class="text-sm text-gray-400 mt-0.5">Blocos, ambientes e usuários em formato JSON</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-4xl">
+
+  {# ── Exportar ── #}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-ifce/10 flex items-center justify-center flex-shrink-0">
+        <svg class="w-4 h-4 text-ifce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold text-gray-800">Exportar estrutura</p>
+        <p class="text-xs text-gray-400">Gera arquivo JSON para backup ou migração</p>
+      </div>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+      <p class="text-sm text-gray-600 leading-relaxed">
+        O arquivo exportado contém todos os <strong>blocos</strong>,
+        <strong>ambientes</strong> e <strong>usuários</strong> cadastrados.
+        Senhas <em>não</em> são exportadas.
+      </p>
+      <div class="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 text-xs text-gray-500 font-mono space-y-0.5">
+        <p>{ "versao": "1",</p>
+        <p>&nbsp;&nbsp;"blocos": [ … ],</p>
+        <p>&nbsp;&nbsp;"ambientes": [ … ],</p>
+        <p>&nbsp;&nbsp;"usuarios": [ … ] }</p>
+      </div>
+      <a href="{{ url_for('admin.dados_exportar') }}"
+         class="inline-flex items-center gap-2 bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Baixar JSON
+      </a>
+    </div>
+  </div>
+
+  {# ── Importar ── #}
+  <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-sm font-bold text-gray-800">Importar estrutura</p>
+        <p class="text-xs text-gray-400">Carrega blocos, ambientes e usuários de um JSON</p>
+      </div>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+
+      <div class="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-2">
+        <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+        </svg>
+        <div class="text-xs text-amber-700">
+          <p class="font-semibold mb-0.5">Atenção</p>
+          <ul class="list-disc list-inside space-y-0.5">
+            <li>Registros duplicados são ignorados automaticamente.</li>
+            <li>Usuários importados recebem senha temporária igual ao username.</li>
+            <li>Nenhum dado existente é excluído ou sobrescrito.</li>
+          </ul>
+        </div>
+      </div>
+
+      <form method="POST" action="{{ url_for('admin.dados_importar') }}"
+            enctype="multipart/form-data" class="space-y-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            Arquivo JSON
+          </label>
+          <input type="file" name="arquivo_json" accept=".json" required
+                 class="block w-full text-sm text-gray-600
+                        file:mr-3 file:py-2 file:px-4
+                        file:rounded-lg file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-ifce/10 file:text-ifce
+                        hover:file:bg-ifce/20 transition cursor-pointer">
+        </div>
+        <button type="submit"
+                class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          Importar
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

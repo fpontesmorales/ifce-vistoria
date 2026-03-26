@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="min-h-[70vh] flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-md w-full max-w-sm p-8">
+
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-ifce mb-3">
+        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+        </svg>
+      </div>
+      <h1 class="text-xl font-bold text-gray-800">Vistorias IFCE</h1>
+      <p class="text-sm text-gray-500 mt-1">Coordenadoria de Infraestrutura</p>
+    </div>
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          {{ form.username.label.text }}
+        </label>
+        {{ form.username(
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent",
+            placeholder="seu.usuario",
+            autocomplete="username"
+        ) }}
+        {% for erro in form.username.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ erro }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          {{ form.senha.label.text }}
+        </label>
+        {{ form.senha(
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm
+                   focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent",
+            placeholder="••••••••",
+            autocomplete="current-password"
+        ) }}
+        {% for erro in form.senha.errors %}
+          <p class="text-xs text-red-600 mt-1">{{ erro }}</p>
+        {% endfor %}
+      </div>
+
+      <div class="mb-6 flex items-center gap-2">
+        {{ form.lembrar(class="w-4 h-4 text-ifce") }}
+        <label for="{{ form.lembrar.id }}" class="text-sm text-gray-600">
+          {{ form.lembrar.label.text }}
+        </label>
+      </div>
+
+      <button type="submit"
+        class="w-full bg-ifce hover:bg-ifce-dark text-white font-semibold py-2 rounded-lg
+               text-sm transition focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2">
+        {{ form.submit.label.text }}
+      </button>
+    </form>
+
+  </div>
+</div>
+{% endblock %}

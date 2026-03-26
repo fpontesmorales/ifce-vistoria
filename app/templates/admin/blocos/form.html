@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import campo %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">{{ titulo }}</h1>
+    {% if bloco %}
+      <p class="text-sm text-gray-400 mt-0.5">ID #{{ bloco.id }}</p>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('admin.blocos_lista') }}"
+     class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Voltar para blocos
+  </a>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-xl">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    {{ campo(form.nome, hint='Nome único que identifica o bloco no campus.') }}
+    {{ campo(form.descricao, hint='Opcional. Breve descrição ou localização.') }}
+    {{ campo(form.ordem, hint='Número inteiro. Blocos com ordem menor aparecem primeiro.') }}
+
+    <div class="flex items-center gap-3 pt-2 border-t border-gray-100 mt-6">
+      {{ form.submit(
+        class="bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-5 py-2.5
+               rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2"
+      ) }}
+      <a href="{{ url_for('admin.blocos_lista') }}"
+         class="text-sm font-medium text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-lg
+                border border-gray-200 hover:bg-gray-50 transition-colors">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

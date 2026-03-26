@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Painel da Coordenação{% endblock %}
+
+{% block content %}
+
+{# ── Cabeçalho ── #}
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Painel da Coordenação</h1>
+  <p class="text-sm text-gray-400 mt-0.5">Visão operacional · IFCE Campus Caucaia — Coordenadoria de Infraestrutura</p>
+</div>
+
+{# ══════════════════════════════════════════════════════════════════════════════
+   SEÇÃO 1 — Alertas operacionais
+══════════════════════════════════════════════════════════════════════════════ #}
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Atenção imediata</p>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+
+  {# Aguardando validação #}
+  <a href="{{ url_for('admin.atividades_validacao') }}"
+     class="group relative bg-white border-l-4 border-amber-400 rounded-lg shadow-sm p-4 hover:shadow-md transition">
+    <p class="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-1">Aguardam validação</p>
+    <p class="text-4xl font-black text-amber-500 leading-none">{{ total_atividades_aguardando }}</p>
+    <p class="text-xs text-gray-400 mt-1">atividades concluídas</p>
+    <span class="absolute right-3 top-3 text-amber-200 group-hover:text-amber-400 transition text-lg">→</span>
+  </a>
+
+  {# Ocorrências abertas #}
+  <a href="{{ url_for('admin.ocorrencias_lista') }}"
+     class="group relative bg-white border-l-4 border-red-400 rounded-lg shadow-sm p-4 hover:shadow-md transition">
+    <p class="text-xs font-semibold text-red-500 uppercase tracking-wide mb-1">Ocorrências abertas</p>
+    <p class="text-4xl font-black text-red-500 leading-none">{{ total_ocorrencias_abertas }}</p>
+    <p class="text-xs text-gray-400 mt-1">registradas + análise + planejadas</p>
+    <span class="absolute right-3 top-3 text-red-200 group-hover:text-red-400 transition text-lg">→</span>
+  </a>
+
+  {# Alta prioridade #}
+  <a href="{{ url_for('admin.ocorrencias_lista', prioridade='alta') }}"
+     class="group relative bg-white border-l-4 border-rose-600 rounded-lg shadow-sm p-4 hover:shadow-md transition">
+    <p class="text-xs font-semibold text-rose-600 uppercase tracking-wide mb-1">Alta prioridade</p>
+    <p class="text-4xl font-black text-rose-600 leading-none">{{ ocorrencias_alta }}</p>
+    <p class="text-xs text-gray-400 mt-1">ocorrências abertas</p>
+    <span class="absolute right-3 top-3 text-rose-200 group-hover:text-rose-400 transition text-lg">→</span>
+  </a>
+
+  {# Atividades pendentes #}
+  <a href="{{ url_for('admin.atividades_lista', status='em_andamento') }}"
+     class="group relative bg-white border-l-4 border-blue-400 rounded-lg shadow-sm p-4 hover:shadow-md transition">
+    <p class="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-1">Atividades em curso</p>
+    <p class="text-4xl font-black text-blue-500 leading-none">{{ total_atividades_pendentes }}</p>
+    <p class="text-xs text-gray-400 mt-1">pendentes + em andamento</p>
+    <span class="absolute right-3 top-3 text-blue-200 group-hover:text-blue-400 transition text-lg">→</span>
+  </a>
+</div>
+
+{# ══════════════════════════════════════════════════════════════════════════════
+   SEÇÃO 2 — Estrutura física e cobertura
+══════════════════════════════════════════════════════════════════════════════ #}
+<p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Estrutura e cobertura de vistorias</p>
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+
+  <a href="{{ url_for('admin.blocos_lista') }}"
+     class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:border-ifce hover:shadow-md transition group text-center">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Blocos</p>
+    <p class="text-3xl font-bold text-gray-800 group-hover:text-ifce transition">{{ total_blocos }}</p>
+    <p class="text-xs text-gray-400 mt-1">ativos</p>
+  </a>
+
+  <a href="{{ url_for('admin.ambientes_lista') }}"
+     class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:border-ifce hover:shadow-md transition group text-center">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Ambientes</p>
+    <p class="text-3xl font-bold text-gray-800 group-hover:text-ifce transition">{{ total_ambientes }}</p>
+    <p class="text-xs text-gray-400 mt-1">cadastrados</p>
+  </a>
+
+  <div class="bg-white rounded-lg border border-emerald-200 shadow-sm p-4 text-center">
+    <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-1">Vistoriados</p>
+    <p class="text-3xl font-bold text-emerald-600">{{ total_ambientes_vistoriados }}</p>
+    <p class="text-xs text-gray-400 mt-1">com ao menos 1 vistoria</p>
+  </div>
+
+  <div class="bg-white rounded-lg border border-gray-300 shadow-sm p-4 text-center">
+    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Sem vistoria</p>
+    <p class="text-3xl font-bold text-gray-600">{{ total_ambientes_pendentes }}</p>
+    <p class="text-xs text-gray-400 mt-1">ambientes pendentes</p>
+  </div>
+
+  <a href="{{ url_for('admin.usuarios_lista') }}"
+     class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 hover:border-ifce hover:shadow-md transition group text-center">
+    <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Usuários</p>
+    <p class="text-3xl font-bold text-gray-800 group-hover:text-ifce transition">{{ total_usuarios }}</p>
+    <p class="text-xs text-gray-400 mt-1">ativos no sistema</p>
+  </a>
+</div>
+
+{# ══════════════════════════════════════════════════════════════════════════════
+   SEÇÃO 3 — Ocorrências por prioridade (minibar)
+══════════════════════════════════════════════════════════════════════════════ #}
+<div class="bg-white rounded-lg border border-gray-200 shadow-sm p-4 mb-6">
+  <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Ocorrências abertas por prioridade</p>
+  <div class="grid grid-cols-3 divide-x divide-gray-100">
+    <a href="{{ url_for('admin.ocorrencias_lista', prioridade='alta') }}"
+       class="flex items-center gap-3 px-4 py-1 hover:bg-red-50 rounded transition group">
+      <span class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></span>
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Alta</p>
+        <p class="text-2xl font-black text-red-500 leading-tight">{{ ocorrencias_alta }}</p>
+      </div>
+    </a>
+    <a href="{{ url_for('admin.ocorrencias_lista', prioridade='media') }}"
+       class="flex items-center gap-3 px-4 py-1 hover:bg-yellow-50 rounded transition group">
+      <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 flex-shrink-0"></span>
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Média</p>
+        <p class="text-2xl font-black text-yellow-500 leading-tight">{{ ocorrencias_media }}</p>
+      </div>
+    </a>
+    <a href="{{ url_for('admin.ocorrencias_lista', prioridade='baixa') }}"
+       class="flex items-center gap-3 px-4 py-1 hover:bg-green-50 rounded transition group">
+      <span class="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0"></span>
+      <div>
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Baixa</p>
+        <p class="text-2xl font-black text-green-600 leading-tight">{{ ocorrencias_baixa }}</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+{# ══════════════════════════════════════════════════════════════════════════════
+   SEÇÃO 4 — Feeds: Últimas vistorias + Últimas ocorrências
+══════════════════════════════════════════════════════════════════════════════ #}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+  {# ── Últimas vistorias ── #}
+  <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+      <p class="text-xs font-bold text-gray-600 uppercase tracking-widest">Últimas vistorias</p>
+      <span class="text-xs text-gray-400">10 mais recentes</span>
+    </div>
+    {% if ultimas_vistorias %}
+    <ul class="divide-y divide-gray-50">
+      {% for v in ultimas_vistorias %}
+      <li class="px-4 py-2.5 flex items-start justify-between gap-2 hover:bg-gray-50 transition">
+        <div class="min-w-0">
+          <a href="{{ url_for('admin.vistorias_detalhe', id=v.id) }}"
+             class="text-sm font-semibold text-gray-800 hover:text-ifce transition truncate block">
+            {{ v.bloco.nome }} — {{ v.ambiente.nome }}
+          </a>
+          <p class="text-xs text-gray-400">
+            {{ v.colaborador.nome_exibicao }} ·
+            {{ v.data_vistoria.strftime('%d/%m/%Y %H:%M') }}
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          {% if v.situacao_geral == 'ok' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-700">OK</span>
+          {% else %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-yellow-100 text-yellow-700">Pendência</span>
+          {% endif %}
+          {% if v.status == 'finalizada' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-600">Finalizada</span>
+          {% else %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">Registrada</span>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-4 py-8 text-center text-sm text-gray-400">Nenhuma vistoria registrada.</div>
+    {% endif %}
+  </div>
+
+  {# ── Últimas ocorrências ── #}
+  <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+      <p class="text-xs font-bold text-gray-600 uppercase tracking-widest">Últimas ocorrências</p>
+      <a href="{{ url_for('admin.ocorrencias_lista') }}"
+         class="text-xs text-ifce hover:underline">Ver todas →</a>
+    </div>
+    {% if ultimas_ocorrencias %}
+    <ul class="divide-y divide-gray-50">
+      {% for o in ultimas_ocorrencias %}
+      <li class="px-4 py-2.5 flex items-start justify-between gap-2 hover:bg-gray-50 transition">
+        <div class="min-w-0">
+          <a href="{{ url_for('admin.ocorrencias_detalhe', id=o.id) }}"
+             class="text-sm font-semibold text-gray-800 hover:text-ifce transition truncate block">
+            #{{ o.id }} — {{ o.get_categoria_display() if o.get_categoria_display is defined else o.categoria | title }}
+          </a>
+          <p class="text-xs text-gray-400 truncate">
+            {{ o.vistoria.bloco.nome }} / {{ o.vistoria.ambiente.nome }} ·
+            {{ o.criado_em.strftime('%d/%m/%Y') }}
+          </p>
+        </div>
+        <div class="flex flex-col items-end gap-1 flex-shrink-0">
+          {# Prioridade #}
+          {% if o.prioridade == 'alta' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600">Alta</span>
+          {% elif o.prioridade == 'media' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-600">Média</span>
+          {% else %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-600">Baixa</span>
+          {% endif %}
+          {# Status #}
+          {% set sc = {
+            'registrada':  'bg-gray-100 text-gray-500',
+            'em_analise':  'bg-yellow-100 text-yellow-600',
+            'planejada':   'bg-blue-100 text-blue-600',
+            'executada':   'bg-green-100 text-green-600',
+            'nao_procede': 'bg-red-100 text-red-500',
+          } %}
+          {% set sl = {
+            'registrada': 'Registrada', 'em_analise': 'Em análise',
+            'planejada': 'Planejada', 'executada': 'Executada', 'nao_procede': 'Não procede',
+          } %}
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-medium {{ sc.get(o.status, 'bg-gray-100 text-gray-500') }}">
+            {{ sl.get(o.status, o.status) }}
+          </span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="px-4 py-8 text-center text-sm text-gray-400">Nenhuma ocorrência registrada.</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

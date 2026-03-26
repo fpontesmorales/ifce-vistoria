@@ -1,0 +1,88 @@
+{# Macros reutilizáveis para templates administrativos #}
+
+{% macro campo(field, rows=None, hint=None, disabled=False) %}
+{% set css = "w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition placeholder-gray-400" %}
+{% set css_disabled = "w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-500 cursor-not-allowed" %}
+<div class="mb-5">
+  <label for="{{ field.id }}" class="block text-sm font-semibold text-gray-700 mb-1.5">
+    {{ field.label.text }}
+  </label>
+  {% if disabled %}
+    {{ field(class=css_disabled, disabled=True) }}
+  {% elif rows %}
+    {{ field(class=css, rows=rows) }}
+  {% else %}
+    {{ field(class=css) }}
+  {% endif %}
+  {% if hint and not field.errors %}
+    <p class="text-xs text-gray-400 mt-1.5">{{ hint }}</p>
+  {% endif %}
+  {% for erro in field.errors %}
+    <p class="text-xs text-red-600 mt-1.5 flex items-center gap-1">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+      </svg>
+      {{ erro }}
+    </p>
+  {% endfor %}
+</div>
+{% endmacro %}
+
+{% macro badge_ativo(ativo) %}
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
+             {{ 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' if ativo else 'bg-gray-100 text-gray-500 ring-1 ring-gray-200' }}">
+  <span class="w-1.5 h-1.5 rounded-full {{ 'bg-emerald-500' if ativo else 'bg-gray-400' }}"></span>
+  {{ 'Ativo' if ativo else 'Inativo' }}
+</span>
+{% endmacro %}
+
+{% macro badge_status_atividade(status) %}
+{% set mapa = {
+  'pendente':    ('bg-gray-100 text-gray-600 ring-gray-200',         'Pendente'),
+  'em_andamento':('bg-blue-50 text-blue-700 ring-blue-200',          'Em andamento'),
+  'concluida':   ('bg-amber-50 text-amber-700 ring-amber-200',       'Concluída'),
+  'validada':    ('bg-emerald-50 text-emerald-700 ring-emerald-200', 'Validada'),
+} %}
+{% set cls, label = mapa.get(status, ('bg-gray-100 text-gray-600 ring-gray-200', status)) %}
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 {{ cls }}">
+  {{ label }}
+</span>
+{% endmacro %}
+
+{% macro badge_perfil(perfil) %}
+{% set mapa = {
+  'admin':       'bg-purple-50 text-purple-700 ring-purple-200',
+  'coordenacao': 'bg-blue-50 text-blue-700 ring-blue-200',
+  'colaborador': 'bg-gray-100 text-gray-600 ring-gray-200',
+} %}
+{% set label_mapa = {'admin': 'Admin', 'coordenacao': 'Coordenação', 'colaborador': 'Colaborador'} %}
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ring-1 {{ mapa.get(perfil, 'bg-gray-100 text-gray-600 ring-gray-200') }}">
+  {{ label_mapa.get(perfil, perfil) }}
+</span>
+{% endmacro %}
+
+{% macro toggle_form(url, ativo, confirmacao=None) %}
+<form method="POST" action="{{ url }}" class="inline"
+  {% if confirmacao %}onsubmit="return confirm('{{ confirmacao }}')"{% endif %}>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <button type="submit"
+    class="text-xs font-medium transition
+           {{ 'text-red-500 hover:text-red-700' if ativo else 'text-emerald-600 hover:text-emerald-800' }}">
+    {{ 'Inativar' if ativo else 'Ativar' }}
+  </button>
+</form>
+{% endmacro %}
+
+{% macro btn_novo(url, label='+ Novo') %}
+<a href="{{ url }}"
+   class="inline-flex items-center gap-1.5 bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold
+          px-4 py-2 rounded-lg shadow-sm transition-colors">
+  {{ label }}
+</a>
+{% endmacro %}
+
+{% macro btn_editar(url) %}
+<a href="{{ url }}" class="text-xs font-medium text-ifce hover:text-ifce-dark transition-colors">
+  Editar
+</a>
+{% endmacro %}

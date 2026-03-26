@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Ocorrência #{{ ocorrencia.id }} — {{ vistoria.ambiente.nome }}{% endblock %}
+
+{% block content %}
+
+{# ── Breadcrumb ─────────────────────────────────────────────────────────────── #}
+<div class="mb-1">
+  <nav class="flex items-center gap-1.5 text-xs text-gray-400">
+    <a href="{{ url_for('colaborador.painel') }}" class="hover:text-ifce transition">Painel</a>
+    <span>/</span>
+    <a href="{{ url_for('colaborador.historico') }}" class="hover:text-ifce transition">Histórico</a>
+    <span>/</span>
+    <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+       class="hover:text-ifce transition">Vistoria #{{ vistoria.id }}</a>
+    <span>/</span>
+    <span class="text-gray-600 font-medium">Ocorrência #{{ ocorrencia.id }}</span>
+  </nav>
+</div>
+
+{# ── Cabeçalho ──────────────────────────────────────────────────────────────── #}
+<div class="mb-6 mt-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+  <div>
+    <p class="text-xs font-semibold text-ifce uppercase tracking-widest mb-1">Detalhe da ocorrência</p>
+    <h1 class="text-2xl font-bold text-gray-900 leading-tight">
+      {{ dict(ocorrencia.CATEGORIAS).get(ocorrencia.categoria, ocorrencia.categoria) }}
+    </h1>
+    <p class="text-sm text-gray-500 mt-0.5">
+      {{ vistoria.ambiente.nome }}
+      &nbsp;·&nbsp;
+      <span class="font-medium text-gray-700">{{ vistoria.bloco.nome }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+     class="self-start sm:self-auto text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition">
+    ← Vistoria #{{ vistoria.id }}
+  </a>
+</div>
+
+<div class="max-w-2xl space-y-4">
+
+  {# ── Card principal ─────────────────────────────────────────────────────────── #}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <h2 class="text-sm font-semibold text-gray-700">Detalhes da ocorrência</h2>
+      {# Badge status #}
+      {% set status_cores = {
+        'registrada':  'bg-sky-100 text-sky-700',
+        'em_analise':  'bg-yellow-100 text-yellow-700',
+        'planejada':   'bg-violet-100 text-violet-700',
+        'executada':   'bg-green-100 text-green-700',
+        'nao_procede': 'bg-gray-100 text-gray-500',
+      } %}
+      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
+                   {{ status_cores.get(ocorrencia.status, 'bg-gray-100 text-gray-500') }}">
+        {{ dict(ocorrencia.STATUS).get(ocorrencia.status, ocorrencia.status) }}
+      </span>
+    </div>
+
+    <div class="px-6 py-5 space-y-5">
+
+      {# Prioridade + Risco #}
+      <div class="grid grid-cols-2 gap-4">
+        <div class="rounded-xl border px-4 py-3
+          {% if ocorrencia.prioridade == 'alta' %}border-rose-200 bg-rose-50
+          {% elif ocorrencia.prioridade == 'media' %}border-amber-200 bg-amber-50
+          {% else %}border-green-200 bg-green-50{% endif %}">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Prioridade</p>
+          <p class="text-sm font-bold
+            {% if ocorrencia.prioridade == 'alta' %}text-rose-700
+            {% elif ocorrencia.prioridade == 'media' %}text-amber-700
+            {% else %}text-green-700{% endif %}">
+            {{ dict(ocorrencia.PRIORIDADES).get(ocorrencia.prioridade, ocorrencia.prioridade) }}
+          </p>
+        </div>
+        <div class="rounded-xl border px-4 py-3
+          {% if ocorrencia.risco == 'alto' %}border-rose-200 bg-rose-50
+          {% elif ocorrencia.risco == 'medio' %}border-amber-200 bg-amber-50
+          {% else %}border-green-200 bg-green-50{% endif %}">
+          <p class="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Risco</p>
+          <p class="text-sm font-bold
+            {% if ocorrencia.risco == 'alto' %}text-rose-700
+            {% elif ocorrencia.risco == 'medio' %}text-amber-700
+            {% else %}text-green-700{% endif %}">
+            {{ dict(ocorrencia.RISCOS).get(ocorrencia.risco, ocorrencia.risco) }}
+          </p>
+        </div>
+      </div>
+
+      {# Descrição #}
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Descrição</p>
+        <div class="bg-gray-50 rounded-lg border border-gray-100 px-4 py-3">
+          <p class="text-sm text-gray-800 leading-relaxed">{{ ocorrencia.descricao }}</p>
+        </div>
+      </div>
+
+      {# Material sugerido #}
+      {% if ocorrencia.material_sugerido %}
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Material sugerido</p>
+        <p class="text-sm text-gray-700">{{ ocorrencia.material_sugerido }}</p>
+      </div>
+      {% endif %}
+
+      {# Observações #}
+      {% if ocorrencia.observacoes %}
+      <div>
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Observações</p>
+        <p class="text-sm text-gray-700 leading-relaxed bg-gray-50 rounded-lg px-4 py-3 border border-gray-100">
+          {{ ocorrencia.observacoes }}
+        </p>
+      </div>
+      {% endif %}
+
+      {# Meta #}
+      <div class="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100">
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Registrada em</p>
+          <p class="text-sm font-medium text-gray-700">{{ ocorrencia.criado_em.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Responsável</p>
+          <p class="text-sm font-medium text-gray-700">{{ colaborador.nome_exibicao }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Categoria</p>
+          <p class="text-sm font-medium text-gray-700">
+            {{ dict(ocorrencia.CATEGORIAS).get(ocorrencia.categoria, ocorrencia.categoria) }}
+          </p>
+        </div>
+        <div>
+          <p class="text-xs text-gray-400 uppercase tracking-wide mb-0.5">Vistoria</p>
+          <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+             class="text-sm font-medium text-ifce hover:underline">
+            #{{ vistoria.id }} — {{ vistoria.data_vistoria.strftime('%d/%m/%Y') }}
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  {# ── Contexto da vistoria ───────────────────────────────────────────────────── #}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="px-6 py-3 border-b border-gray-100 bg-gray-50">
+      <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Vistoria de origem</p>
+    </div>
+    <div class="px-6 py-4 flex items-center justify-between gap-4">
+      <div>
+        <p class="text-sm font-semibold text-gray-800">{{ vistoria.ambiente.nome }}</p>
+        <p class="text-xs text-gray-400 mt-0.5">
+          {{ vistoria.bloco.nome }}
+          &nbsp;·&nbsp;
+          {{ vistoria.data_vistoria.strftime('%d/%m/%Y às %H:%M') }}
+          {% if vistoria.ocorrencias | length > 1 %}
+          &nbsp;·&nbsp;
+          <span class="text-rose-500 font-medium">
+            {{ vistoria.ocorrencias | length }} ocorrências
+          </span>
+          {% endif %}
+        </p>
+      </div>
+      <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+         class="flex-shrink-0 text-xs font-semibold text-ifce hover:underline">
+        Ver vistoria →
+      </a>
+    </div>
+  </div>
+
+  {# ── Ações ─────────────────────────────────────────────────────────────────── #}
+  <div class="flex flex-wrap gap-3">
+    <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+       class="inline-flex items-center gap-2 bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+      ← Voltar à vistoria
+    </a>
+    <a href="{{ url_for('ocorrencias.nova', vistoria_id=vistoria.id) }}"
+       class="inline-flex items-center gap-2 border border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800 text-sm font-medium px-4 py-2 rounded-lg transition">
+      + Nova ocorrência nesta vistoria
+    </a>
+    <a href="{{ url_for('colaborador.ambientes_do_bloco', bloco_id=vistoria.bloco_id) }}"
+       class="inline-flex items-center gap-2 border border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-800 text-sm font-medium px-4 py-2 rounded-lg transition">
+      Ambientes do bloco
+    </a>
+  </div>
+
+</div>
+
+{% endblock %}

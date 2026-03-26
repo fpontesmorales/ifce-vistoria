@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import badge_status_atividade %}
+{% block title %}Fila de Validação{% endblock %}
+
+{% block extra_head %}
+<style>
+  .card-validacao {
+    transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+  }
+  .card-validacao:hover {
+    box-shadow: 0 4px 16px rgba(245, 158, 11, 0.12);
+    border-color: #fcd34d;
+    transform: translateY(-1px);
+  }
+  .btn-validar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #059669;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    box-shadow: 0 1px 3px rgba(5,150,105,0.25);
+    letter-spacing: 0.01em;
+  }
+  .btn-validar:hover { background: #047857; box-shadow: 0 3px 8px rgba(5,150,105,0.35); }
+  .btn-validar:active { transform: scale(0.97); }
+
+  .filtro-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    text-decoration: none;
+    border: 1.5px solid transparent;
+  }
+  .filtro-tab:hover { background: #f3f4f6; color: #374151; }
+  .filtro-tab.ativo {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #86efac;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+{# ── Abas ── #}
+<div class="mb-5 flex items-center gap-1 border-b border-gray-200">
+  <a href="{{ url_for('admin.atividades_lista') }}"
+     class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+    Lista
+  </a>
+  <a href="{{ url_for('admin.atividades_validacao') }}"
+     class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-ifce text-ifce flex items-center gap-1.5">
+    Fila de Validação
+    {% if atividades|length > 0 %}
+    <span class="bg-amber-400 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
+      {{ atividades|length }}
+    </span>
+    {% endif %}
+  </a>
+</div>
+
+{# ── Cabeçalho ── #}
+<div class="flex items-start justify-between mb-5 gap-4 flex-wrap">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900 flex items-center gap-2.5">
+      Fila de validação
+      {% if atividades|length > 0 %}
+      <span class="inline-flex items-center justify-center bg-amber-100 text-amber-700
+                   text-sm font-black px-2.5 py-0.5 rounded-full ring-1 ring-amber-300">
+        {{ atividades|length }}
+      </span>
+      {% endif %}
+    </h1>
+    <p class="text-sm text-gray-400 mt-0.5">
+      Atividades concluídas pelos colaboradores aguardando validação da coordenação
+    </p>
+  </div>
+</div>
+
+{# ── Filtro por colaborador ── #}
+{% if colaboradores %}
+<div class="mb-5 flex items-center gap-2 flex-wrap">
+  <span class="text-xs font-semibold text-gray-400 uppercase tracking-wide mr-1">Filtrar:</span>
+  <a href="{{ url_for('admin.atividades_validacao') }}"
+     class="filtro-tab {{ 'ativo' if not colaborador_id_filtro }}">
+    Todos
+  </a>
+  {% for col in colaboradores %}
+  <a href="{{ url_for('admin.atividades_validacao', colaborador_id=col.id) }}"
+     class="filtro-tab {{ 'ativo' if colaborador_id_filtro == col.id }}">
+    {{ col.nome_exibicao }}
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{# ── Fila de atividades ── #}
+{% if atividades %}
+<div class="space-y-3">
+  {% for at in atividades %}
+  <div class="card-validacao bg-white rounded-xl border border-amber-200 shadow-sm px-5 py-4">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+
+      {# Conteúdo #}
+      <div class="min-w-0 flex-1">
+
+        {# Badges de topo #}
+        <div class="flex items-center gap-2 flex-wrap mb-1.5">
+          <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold
+                       ring-1 bg-amber-50 text-amber-700 ring-amber-200">
+            Aguardando validação
+          </span>
+          <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-semibold uppercase tracking-wide">
+            {{ dict(at.TIPOS).get(at.tipo, at.tipo) }}
+          </span>
+        </div>
+
+        {# Título #}
+        <p class="text-base font-bold text-gray-900 leading-snug">{{ at.titulo }}</p>
+
+        {% if at.descricao %}
+        <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ at.descricao }}</p>
+        {% endif %}
+
+        {# Metadados #}
+        <div class="flex items-center gap-x-4 gap-y-1.5 mt-2.5 flex-wrap text-xs text-gray-400">
+
+          {# Colaborador #}
+          <span class="flex items-center gap-1 font-semibold text-gray-600">
+            <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+            </svg>
+            {{ at.colaborador.nome_exibicao }}
+          </span>
+
+          {# Bloco / Ambiente #}
+          {% if at.bloco %}
+          <span class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+            </svg>
+            {{ at.bloco.nome }}{% if at.ambiente %} / {{ at.ambiente.nome }}{% endif %}
+          </span>
+          {% endif %}
+
+          {# Criada em #}
+          <span class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Criada {{ at.criado_em.strftime('%d/%m/%Y') if at.criado_em else '—' }}
+          </span>
+
+          {# Iniciada em #}
+          {% if at.iniciado_em %}
+          <span class="flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 flex-shrink-0 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 10v4a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            Iniciada {{ at.iniciado_em.strftime('%d/%m/%Y') }}
+          </span>
+          {% endif %}
+
+          {# Concluída em — destaque #}
+          {% if at.concluido_em %}
+          <span class="flex items-center gap-1 font-semibold text-emerald-600">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+            Concluída {{ at.concluido_em.strftime('%d/%m/%Y às %H:%M') }}
+          </span>
+          {% endif %}
+
+        </div>
+
+        {# Observações #}
+        {% if at.observacoes %}
+        <p class="text-xs text-gray-400 italic mt-2.5 border-l-2 border-amber-200 pl-3">
+          {{ at.observacoes }}
+        </p>
+        {% endif %}
+
+      </div>
+
+      {# Botão Validar #}
+      <div class="flex-shrink-0 self-end sm:self-center pt-1 sm:pt-0">
+        <form action="{{ url_for('admin.atividades_validar', id=at.id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn-validar">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+            Validar atividade
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Rodapé informativo #}
+<p class="text-xs text-gray-400 text-center mt-6">
+  {{ atividades|length }} atividade(s) aguardando validação
+  {% if colaborador_id_filtro %} para este colaborador{% endif %}.
+</p>
+
+{% else %}
+{# ── Estado vazio ── #}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-16 text-center">
+  <div class="w-14 h-14 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4">
+    <svg class="w-7 h-7 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+  </div>
+  <p class="text-base font-semibold text-gray-700">Fila vazia — nenhuma atividade aguardando</p>
+  <p class="text-sm text-gray-400 mt-1">
+    {% if colaborador_id_filtro %}
+      Este colaborador não possui atividades concluídas pendentes de validação.
+    {% else %}
+      Todas as atividades concluídas já foram validadas pela coordenação.
+    {% endif %}
+  </p>
+  <a href="{{ url_for('admin.atividades_lista') }}"
+     class="text-sm text-ifce hover:underline mt-3 inline-block font-medium">
+    Ver histórico completo de atividades →
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

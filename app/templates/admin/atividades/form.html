@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import campo %}
+{% block title %}{{ titulo }}{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">{{ titulo }}</h1>
+    {% if atividade %}
+      <p class="text-sm text-gray-400 mt-0.5">ID #{{ atividade.id }} · Status:
+        <span class="font-medium text-gray-600">{{ atividade.status | replace('_', ' ') }}</span>
+      </p>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('admin.atividades_lista') }}"
+     class="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+    </svg>
+    Voltar para atividades
+  </a>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-2xl">
+  <form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-5">
+      <div class="sm:col-span-2">{{ campo(form.titulo) }}</div>
+      {{ campo(form.tipo) }}
+      {{ campo(form.colaborador_id) }}
+      {{ campo(form.bloco_id, hint='Opcional. Deixe em "nenhum" se a atividade não for vinculada a um local.') }}
+      {{ campo(form.ambiente_id, hint='Opcional. Selecione apenas se a atividade for em um ambiente específico.') }}
+      <div class="sm:col-span-2">{{ campo(form.descricao, rows=3) }}</div>
+      <div class="sm:col-span-2">{{ campo(form.observacoes, rows=2, hint='Observações internas para a coordenação.') }}</div>
+    </div>
+
+    <div class="flex items-center gap-3 pt-2 border-t border-gray-100 mt-2">
+      {{ form.submit(
+        class="bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-5 py-2.5
+               rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2"
+      ) }}
+      <a href="{{ url_for('admin.atividades_lista') }}"
+         class="text-sm font-medium text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-lg
+                border border-gray-200 hover:bg-gray-50 transition-colors">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

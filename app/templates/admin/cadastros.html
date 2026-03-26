@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import badge_ativo, badge_perfil, toggle_form, btn_novo, btn_editar %}
+{% block title %}Cadastros{% endblock %}
+
+{% block content %}
+{# ── Abas ── #}
+<div class="mb-6 flex items-center gap-1 border-b border-gray-200">
+  {% for slug, label in [('blocos','Blocos'),('ambientes','Ambientes'),('colaboradores','Colaboradores'),('usuarios','Usuários')] %}
+  <a href="{{ url_for('admin.cadastros', aba=slug) }}"
+     class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors
+            {% if aba == slug %}border-ifce text-ifce{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+    {{ label }}
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Blocos ── #}
+{% if aba == 'blocos' %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Blocos</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ blocos|length }} bloco(s) cadastrado(s)</p>
+  </div>
+  {{ btn_novo(url_for('admin.blocos_novo'), '+ Novo bloco') }}
+</div>
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if blocos %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-12">Ord.</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Descrição</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for bloco in blocos %}
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-5 py-3.5 text-gray-400 font-mono text-xs">{{ bloco.ordem }}</td>
+        <td class="px-5 py-3.5">
+          <span class="font-semibold text-gray-800">{{ bloco.nome }}</span>
+          <div class="text-xs text-gray-400 mt-0.5 md:hidden">{{ bloco.descricao or '—' }}</div>
+        </td>
+        <td class="px-5 py-3.5 text-gray-500 hidden md:table-cell">{{ bloco.descricao or '—' }}</td>
+        <td class="px-5 py-3.5">{{ badge_ativo(bloco.ativo) }}</td>
+        <td class="px-5 py-3.5 text-right">
+          <div class="flex items-center justify-end gap-4">
+            {{ btn_editar(url_for('admin.blocos_editar', id=bloco.id)) }}
+            {{ toggle_form(
+                url_for('admin.blocos_toggle', id=bloco.id),
+                bloco.ativo,
+                confirmacao='Deseja inativar o bloco "' ~ bloco.nome ~ '"? Ambientes vinculados não aparecerão para novas vistorias.'
+                  if bloco.ativo else None
+            ) }}
+            <a href="{{ url_for('admin.cadastros', aba='ambientes', bloco_id=bloco.id) }}"
+               class="text-xs font-medium text-blue-500 hover:text-blue-700 transition-colors">
+              Ambientes
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="px-5 py-16 text-center">
+    <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5
+           M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+    </svg>
+    <p class="text-gray-400 text-sm">Nenhum bloco cadastrado.</p>
+    <a href="{{ url_for('admin.blocos_novo') }}" class="text-ifce text-sm font-medium hover:underline mt-1 inline-block">
+      Cadastrar o primeiro bloco
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Ambientes ── #}
+{% elif aba == 'ambientes' %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Ambientes</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ ambientes|length }} ambiente(s) exibido(s)</p>
+  </div>
+  {{ btn_novo(url_for('admin.ambientes_novo'), '+ Novo ambiente') }}
+</div>
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4 mb-4 flex items-center gap-3 flex-wrap">
+  <span class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Filtrar por bloco:</span>
+  <a href="{{ url_for('admin.cadastros', aba='ambientes') }}"
+     class="px-3 py-1 rounded-full text-xs font-medium transition
+            {{ 'bg-ifce text-white' if not bloco_id_filtro else 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+    Todos
+  </a>
+  {% for bloco in blocos %}
+  <a href="{{ url_for('admin.cadastros', aba='ambientes', bloco_id=bloco.id) }}"
+     class="px-3 py-1 rounded-full text-xs font-medium transition
+            {{ 'bg-ifce text-white' if bloco_id_filtro == bloco.id else 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">
+    {{ bloco.nome }}
+  </a>
+  {% endfor %}
+</div>
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if ambientes %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Ambiente</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Bloco</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Descrição</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide w-12">Ord.</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for amb in ambientes %}
+      <tr class="hover:bg-gray-50 transition-colors">
+        <td class="px-5 py-3.5">
+          <span class="font-semibold text-gray-800">{{ amb.nome }}</span>
+          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">{{ amb.bloco.nome }}</div>
+        </td>
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">{{ amb.bloco.nome }}</span>
+        </td>
+        <td class="px-5 py-3.5 text-gray-500 hidden md:table-cell">{{ amb.descricao or '—' }}</td>
+        <td class="px-5 py-3.5 text-gray-400 font-mono text-xs">{{ amb.ordem }}</td>
+        <td class="px-5 py-3.5">{{ badge_ativo(amb.ativo) }}</td>
+        <td class="px-5 py-3.5 text-right">
+          <div class="flex items-center justify-end gap-4">
+            {{ btn_editar(url_for('admin.ambientes_editar', id=amb.id)) }}
+            {{ toggle_form(url_for('admin.ambientes_toggle', id=amb.id), amb.ativo) }}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="px-5 py-16 text-center">
+    <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3
+           m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+    </svg>
+    <p class="text-gray-400 text-sm">Nenhum ambiente encontrado.</p>
+    {% if not blocos %}
+      <p class="text-gray-400 text-xs mt-1">Cadastre um bloco antes de criar ambientes.</p>
+    {% else %}
+      <a href="{{ url_for('admin.ambientes_novo') }}" class="text-ifce text-sm font-medium hover:underline mt-1 inline-block">
+        Cadastrar o primeiro ambiente
+      </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{# ── Colaboradores ── #}
+{% elif aba == 'colaboradores' %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Colaboradores</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ colaboradores|length }} colaborador(es) cadastrado(s)</p>
+  </div>
+  {{ btn_novo(url_for('admin.colaboradores_novo'), '+ Novo colaborador') }}
+</div>
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if colaboradores %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome de exibição</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Usuário</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Função</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for c in colaboradores %}
+      <tr class="hover:bg-gray-50 transition-colors {% if not c.ativo %}opacity-60{% endif %}">
+        <td class="px-5 py-3.5">
+          <div class="font-semibold text-gray-800">{{ c.nome_exibicao }}</div>
+          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">@{{ c.usuario.username }}</div>
+        </td>
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <span class="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ c.usuario.username }}</span>
+        </td>
+        <td class="px-5 py-3.5 text-gray-500 hidden md:table-cell">{{ c.funcao or '—' }}</td>
+        <td class="px-5 py-3.5">{{ badge_ativo(c.ativo) }}</td>
+        <td class="px-5 py-3.5 text-right">
+          <div class="flex items-center justify-end gap-4">
+            {{ btn_editar(url_for('admin.colaboradores_editar', id=c.id)) }}
+            {{ toggle_form(url_for('admin.colaboradores_toggle', id=c.id), c.ativo) }}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="px-5 py-16 text-center">
+    <p class="text-gray-400 text-sm">Nenhum colaborador cadastrado.</p>
+    <p class="text-gray-400 text-xs mt-1">Crie um usuário com perfil "Colaborador" antes de vincular aqui.</p>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Usuários ── #}
+{% elif aba == 'usuarios' %}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Usuários</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ usuarios|length }} usuário(s) cadastrado(s)</p>
+  </div>
+  {{ btn_novo(url_for('admin.usuarios_novo'), '+ Novo usuário') }}
+</div>
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if usuarios %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Login</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Perfil</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Criado em</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for u in usuarios %}
+      <tr class="hover:bg-gray-50 transition-colors {% if not u.ativo %}opacity-60{% endif %}">
+        <td class="px-5 py-3.5">
+          <div class="font-semibold text-gray-800">{{ u.nome }}</div>
+          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">@{{ u.username }}</div>
+        </td>
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <span class="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ u.username }}</span>
+        </td>
+        <td class="px-5 py-3.5">{{ badge_perfil(u.perfil) }}</td>
+        <td class="px-5 py-3.5 text-gray-400 text-xs hidden md:table-cell">
+          {{ u.criado_em.strftime('%d/%m/%Y') if u.criado_em else '—' }}
+        </td>
+        <td class="px-5 py-3.5">{{ badge_ativo(u.ativo) }}</td>
+        <td class="px-5 py-3.5 text-right">
+          <div class="flex items-center justify-end gap-4">
+            {{ btn_editar(url_for('admin.usuarios_editar', id=u.id)) }}
+            {% if u.id != current_user.id %}
+              {{ toggle_form(
+                  url_for('admin.usuarios_toggle', id=u.id),
+                  u.ativo,
+                  confirmacao='Deseja inativar o usuário "' ~ u.username ~ '"?' if u.ativo else None
+              ) }}
+            {% else %}
+              <span class="text-xs text-gray-300">—</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="px-5 py-16 text-center">
+    <p class="text-gray-400 text-sm">Nenhum usuário cadastrado.</p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

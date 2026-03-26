@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Meu Histórico{% endblock %}
+
+{% block extra_head %}
+<style>
+  .secao-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    background: #f9fafb;
+    border-radius: 10px 10px 0 0;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .secao-header h2 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .secao-header .contagem {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #9ca3af;
+    margin-left: auto;
+  }
+
+  .linha-hist {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 1.2rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.1s;
+  }
+  .linha-hist:last-child { border-bottom: none; }
+  .linha-hist:hover { background: #f9fafb; }
+
+  .empty-state {
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 0.85rem;
+  }
+
+  .tab-section {
+    cursor: pointer;
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #6b7280;
+    border: 1.5px solid transparent;
+    transition: all 0.15s;
+  }
+  .tab-section.ativo, .tab-section:hover {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bbf7d0;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Cabeçalho ──────────────────────────────────────────────────────────────── #}
+<div class="mb-6">
+  <div class="flex items-center gap-2 text-xs text-gray-400 mb-2">
+    <a href="{{ url_for('colaborador.painel') }}" class="hover:text-ifce">Painel</a>
+    <span>/</span>
+    <span class="text-gray-600 font-medium">Histórico</span>
+  </div>
+  <h1 class="text-2xl font-bold text-gray-900">Meu histórico</h1>
+  <p class="text-sm text-gray-500 mt-0.5">
+    {{ colaborador.nome_exibicao }}
+    {% if colaborador.funcao %} · {{ colaborador.funcao }}{% endif %}
+  </p>
+</div>
+
+{# ── Abas de navegação ────────────────────────────────────────────────────────── #}
+<div class="flex items-center gap-2 mb-5 flex-wrap">
+  <button onclick="mostrarSecao('atividades')" id="tab-atividades" class="tab-section ativo">
+    Atividades ({{ atividades | length }})
+  </button>
+  <button onclick="mostrarSecao('vistorias')" id="tab-vistorias" class="tab-section">
+    Vistorias ({{ vistorias | length }})
+  </button>
+  <button onclick="mostrarSecao('ocorrencias')" id="tab-ocorrencias" class="tab-section">
+    Ocorrências ({{ ocorrencias | length }})
+  </button>
+</div>
+
+{# ══ SEÇÃO: ATIVIDADES ══════════════════════════════════════════════════════════ #}
+<div id="secao-atividades">
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="secao-header">
+      <svg class="w-4 h-4 text-ifce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+      </svg>
+      <h2>Atividades</h2>
+      <span class="contagem">{{ atividades | length }} registros</span>
+    </div>
+
+    {% if atividades %}
+    <div>
+      {% for at in atividades %}
+      <div class="linha-hist">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap mb-0.5">
+            <span class="status-badge badge-{{ at.status }}">
+              {{ dict(at.STATUS).get(at.status, at.status) }}
+            </span>
+            <span class="text-xs text-gray-400">{{ dict(at.TIPOS).get(at.tipo, at.tipo) }}</span>
+          </div>
+          <p class="text-sm font-semibold text-gray-800 leading-snug">{{ at.titulo }}</p>
+          {% if at.descricao %}
+          <p class="text-xs text-gray-400 mt-0.5 line-clamp-1">{{ at.descricao }}</p>
+          {% endif %}
+          {% if at.bloco or at.ambiente %}
+          <p class="text-xs text-gray-400 mt-0.5">
+            {% if at.bloco %}{{ at.bloco.nome }}{% endif %}
+            {% if at.ambiente %} / {{ at.ambiente.nome }}{% endif %}
+          </p>
+          {% endif %}
+        </div>
+        <div class="flex-shrink-0 text-right text-xs text-gray-400 space-y-0.5">
+          <p>Criada: <span class="font-medium text-gray-600">{{ at.criado_em.strftime('%d/%m/%Y') }}</span></p>
+          {% if at.iniciado_em %}
+          <p>Iniciada: <span class="font-medium text-gray-600">{{ at.iniciado_em.strftime('%d/%m/%Y') }}</span></p>
+          {% endif %}
+          {% if at.concluido_em %}
+          <p>Concluída: <span class="font-medium text-gray-600">{{ at.concluido_em.strftime('%d/%m/%Y') }}</span></p>
+          {% endif %}
+          {% if at.validado_em %}
+          <p>Validada: <span class="font-medium text-emerald-600">{{ at.validado_em.strftime('%d/%m/%Y') }}</span></p>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>Nenhuma atividade registrada.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ══ SEÇÃO: VISTORIAS ══════════════════════════════════════════════════════════ #}
+<div id="secao-vistorias" style="display:none">
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="secao-header">
+      <svg class="w-4 h-4 text-ifce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+      </svg>
+      <h2>Vistorias realizadas</h2>
+      <span class="contagem">{{ vistorias | length }} registros</span>
+    </div>
+
+    {% if vistorias %}
+    <div>
+      {% for v in vistorias %}
+      <div class="linha-hist">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 flex-wrap mb-0.5">
+            <span class="status-badge badge-{{ v.situacao_geral }}">
+              {{ 'OK' if v.situacao_geral == 'ok' else 'Com pendência' }}
+            </span>
+            <span class="text-xs text-gray-400">
+              {{ v.status | replace('_', ' ') | title }}
+            </span>
+          </div>
+          <p class="text-sm font-semibold text-gray-800">
+            {{ v.ambiente.nome if v.ambiente else '—' }}
+          </p>
+          <p class="text-xs text-gray-400 mt-0.5">
+            {{ v.bloco.nome if v.bloco else '—' }}
+            {% if v.ocorrencias %}
+            · <span class="text-rose-500 font-medium">{{ v.ocorrencias | length }} ocorrência{{ 's' if v.ocorrencias | length > 1 else '' }}</span>
+            {% endif %}
+          </p>
+          {% if v.observacoes %}
+          <p class="text-xs text-gray-400 italic mt-1 line-clamp-1">{{ v.observacoes }}</p>
+          {% endif %}
+        </div>
+        <div class="flex-shrink-0 text-right text-xs text-gray-400">
+          <p class="font-medium text-gray-600">{{ v.data_vistoria.strftime('%d/%m/%Y') }}</p>
+          <p class="mt-0.5">{{ v.data_vistoria.strftime('%H:%M') }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>Nenhuma vistoria realizada ainda.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ══ SEÇÃO: OCORRÊNCIAS ════════════════════════════════════════════════════════ #}
+<div id="secao-ocorrencias" style="display:none">
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div class="secao-header">
+      <svg class="w-4 h-4 text-ifce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      <h2>Ocorrências registradas</h2>
+      <span class="contagem">{{ ocorrencias | length }} registros</span>
+    </div>
+
+    <div>
+      {% for oc in ocorrencias %}
+      <a href="{{ url_for('ocorrencias.detalhe', ocorrencia_id=oc.id) }}"
+         class="linha-hist group block">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2 flex-wrap mb-0.5">
+              <span class="status-badge badge-{{ oc.status }}">
+                {{ dict(oc.STATUS).get(oc.status, oc.status) }}
+              </span>
+              <span class="text-xs font-semibold text-gray-400 uppercase">
+                {{ dict(oc.CATEGORIAS).get(oc.categoria, oc.categoria) }}
+              </span>
+            </div>
+            <p class="text-sm font-semibold text-gray-800 group-hover:text-ifce leading-snug transition">
+              {{ oc.descricao | truncate(80) }}
+            </p>
+            <div class="flex items-center gap-3 mt-1 text-xs text-gray-400 flex-wrap">
+              <span>Prioridade:
+                <span class="font-semibold
+                  {% if oc.prioridade == 'alta' %}text-rose-600
+                  {% elif oc.prioridade == 'media' %}text-amber-600
+                  {% else %}text-gray-500{% endif %}">
+                  {{ dict(oc.PRIORIDADES).get(oc.prioridade, oc.prioridade) }}
+                </span>
+              </span>
+              <span>Risco:
+                <span class="font-semibold
+                  {% if oc.risco == 'alto' %}text-rose-600
+                  {% elif oc.risco == 'medio' %}text-amber-600
+                  {% else %}text-gray-500{% endif %}">
+                  {{ dict(oc.RISCOS).get(oc.risco, oc.risco) }}
+                </span>
+              </span>
+              {% if oc.vistoria and oc.vistoria.ambiente %}
+              <span>· {{ oc.vistoria.ambiente.nome }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="flex-shrink-0 text-right text-xs text-gray-400 space-y-0.5">
+            <p class="font-medium text-gray-600">{{ oc.criado_em.strftime('%d/%m/%Y') }}</p>
+            <p>{{ oc.criado_em.strftime('%H:%M') }}</p>
+            <p class="text-ifce opacity-0 group-hover:opacity-100 transition text-[10px] font-semibold">Ver →</p>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <p>Nenhuma ocorrência registrada ainda.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+function mostrarSecao(secao) {
+  ['atividades', 'vistorias', 'ocorrencias'].forEach(s => {
+    document.getElementById('secao-' + s).style.display = (s === secao) ? '' : 'none';
+    const tab = document.getElementById('tab-' + s);
+    if (s === secao) tab.classList.add('ativo');
+    else tab.classList.remove('ativo');
+  });
+}
+</script>
+
+{% endblock %}

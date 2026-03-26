@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import badge_ativo, badge_perfil, toggle_form, btn_novo, btn_editar %}
+{% block title %}Usuários{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Usuários</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ usuarios|length }} usuário(s) cadastrado(s)</p>
+  </div>
+  {{ btn_novo(url_for('admin.usuarios_novo'), '+ Novo usuário') }}
+</div>
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if usuarios %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Nome</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Login</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Perfil</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Criado em</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for u in usuarios %}
+      <tr class="hover:bg-gray-50 transition-colors {% if not u.ativo %}opacity-60{% endif %}">
+        <td class="px-5 py-3.5">
+          <div class="font-semibold text-gray-800">{{ u.nome }}</div>
+          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">@{{ u.username }}</div>
+        </td>
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <span class="font-mono text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ u.username }}</span>
+        </td>
+        <td class="px-5 py-3.5">{{ badge_perfil(u.perfil) }}</td>
+        <td class="px-5 py-3.5 text-gray-400 text-xs hidden md:table-cell">
+          {{ u.criado_em.strftime('%d/%m/%Y') if u.criado_em else '—' }}
+        </td>
+        <td class="px-5 py-3.5">{{ badge_ativo(u.ativo) }}</td>
+        <td class="px-5 py-3.5 text-right">
+          <div class="flex items-center justify-end gap-4">
+            {{ btn_editar(url_for('admin.usuarios_editar', id=u.id)) }}
+            {% if u.id != current_user.id %}
+              {{ toggle_form(
+                  url_for('admin.usuarios_toggle', id=u.id),
+                  u.ativo,
+                  confirmacao='Deseja inativar o usuário "' ~ u.username ~ '"?' if u.ativo else None
+              ) }}
+            {% else %}
+              <span class="text-xs text-gray-300">—</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="px-5 py-16 text-center">
+    <p class="text-gray-400 text-sm">Nenhum usuário cadastrado.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

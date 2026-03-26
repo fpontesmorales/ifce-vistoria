@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}Ocorrência #{{ ocorrencia.id }}{% endblock %}
+
+{% block content %}
+
+{# ── Breadcrumb + cabeçalho ── #}
+<div class="flex items-start justify-between mb-6">
+  <div>
+    <p class="text-xs text-gray-400 mb-1">
+      <a href="{{ url_for('admin.ocorrencias_lista') }}" class="hover:text-ifce transition">Ocorrências</a>
+      <span class="mx-1 text-gray-300">›</span>
+      <span class="text-gray-600 font-medium">Ocorrência #{{ ocorrencia.id }}</span>
+    </p>
+    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Ocorrência #{{ ocorrencia.id }}</h1>
+    <p class="text-sm text-gray-400 mt-0.5">
+      Registrada em {{ ocorrencia.criado_em.strftime('%d/%m/%Y às %H:%M') }}
+      {% if ocorrencia.atualizado_em and ocorrencia.atualizado_em != ocorrencia.criado_em %}
+        · <span class="text-gray-400">Atualizada em {{ ocorrencia.atualizado_em.strftime('%d/%m/%Y às %H:%M') }}</span>
+      {% endif %}
+    </p>
+  </div>
+  <a href="{{ url_for('admin.ocorrencias_lista') }}"
+     class="flex-shrink-0 text-sm text-gray-500 hover:text-ifce border border-gray-200 rounded px-3 py-1.5 hover:border-ifce transition">
+    ← Lista
+  </a>
+</div>
+
+{# ── Barra de progressão de status ── #}
+{% set status_steps = [
+  ('registrada',  'Registrada'),
+  ('em_analise',  'Em análise'),
+  ('planejada',   'Planejada'),
+  ('executada',   'Executada'),
+] %}
+{% set status_order = ['registrada', 'em_analise', 'planejada', 'executada', 'nao_procede'] %}
+{% set current_idx = status_order.index(ocorrencia.status) if ocorrencia.status in status_order else 0 %}
+
+{% if ocorrencia.status != 'nao_procede' %}
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm px-4 py-4 mb-5">
+  <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Progressão do status</p>
+  <div class="flex items-center gap-0">
+    {% for val, lbl in status_steps %}
+      {% set step_idx = loop.index0 %}
+      {% set is_current = (val == ocorrencia.status) %}
+      {% set is_done = (step_idx < current_idx) %}
+      <div class="flex-1 flex flex-col items-center relative">
+        {# Linha conectora antes do passo #}
+        {% if not loop.first %}
+        <div class="absolute left-0 top-3.5 w-1/2 h-0.5 {% if step_idx <= current_idx %}bg-ifce{% else %}bg-gray-200{% endif %} -translate-y-px"></div>
+        {% endif %}
+        {# Linha conectora após o passo #}
+        {% if not loop.last %}
+        <div class="absolute right-0 top-3.5 w-1/2 h-0.5 {% if step_idx < current_idx %}bg-ifce{% else %}bg-gray-200{% endif %} -translate-y-px"></div>
+        {% endif %}
+        {# Círculo do passo #}
+        <div class="relative z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
+          {% if is_current %}bg-ifce text-white ring-2 ring-ifce ring-offset-2
+          {% elif is_done %}bg-ifce text-white
+          {% else %}bg-gray-100 text-gray-400 border border-gray-200{% endif %}">
+          {% if is_done %}
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+            </svg>
+          {% else %}
+            {{ loop.index }}
+          {% endif %}
+        </div>
+        <p class="mt-2 text-xs font-medium
+          {% if is_current %}text-ifce
+          {% elif is_done %}text-gray-500
+          {% else %}text-gray-300{% endif %}">
+          {{ lbl }}
+        </p>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+<div class="bg-rose-50 border border-rose-200 rounded-lg px-4 py-3 mb-5 flex items-center gap-2">
+  <svg class="w-4 h-4 text-rose-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  <p class="text-sm font-semibold text-rose-700">Status: Não procede — ocorrência encerrada sem ação.</p>
+</div>
+{% endif %}
+
+{# ── Grade principal ── #}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+  {# ═══════════════════════════════════════
+     Coluna esquerda — Dados da ocorrência
+  ═══════════════════════════════════════ #}
+  <div class="lg:col-span-2 space-y-4">
+
+    {# Vistoria de origem #}
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Vistoria de origem</p>
+        <a href="{{ url_for('admin.vistorias_detalhe', id=ocorrencia.vistoria_id) }}"
+           class="text-xs text-ifce font-semibold hover:underline font-mono">
+          Vistoria #{{ ocorrencia.vistoria_id }} →
+        </a>
+      </div>
+      <div class="px-4 py-3 grid grid-cols-2 gap-4">
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Bloco</p>
+          <p class="text-sm font-semibold text-gray-800">{{ ocorrencia.vistoria.bloco.nome }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Ambiente</p>
+          <p class="text-sm font-semibold text-gray-800">{{ ocorrencia.vistoria.ambiente.nome }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Colaborador</p>
+          <p class="text-sm text-gray-700">{{ ocorrencia.vistoria.colaborador.nome_exibicao }}</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Data da vistoria</p>
+          <p class="text-sm text-gray-700">{{ ocorrencia.vistoria.data_vistoria.strftime('%d/%m/%Y %H:%M') }}</p>
+        </div>
+        {% if ocorrencia.vistoria.observacoes %}
+        <div class="col-span-2">
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Obs. da vistoria</p>
+          <p class="text-sm text-gray-600 italic">{{ ocorrencia.vistoria.observacoes }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {# Detalhes da ocorrência #}
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">Detalhes da ocorrência</p>
+      </div>
+      <div class="px-4 py-3 space-y-4">
+
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Categoria</p>
+            {% set cat_labels = {
+              'eletrica': 'Elétrica', 'hidraulica': 'Hidráulica', 'civil': 'Civil',
+              'pintura': 'Pintura', 'esquadrias': 'Esquadrias', 'cobertura': 'Cobertura',
+              'mobiliario': 'Mobiliário', 'limpeza_conservacao': 'Limpeza / Conservação',
+              'seguranca': 'Segurança', 'outros': 'Outros',
+            } %}
+            <p class="text-sm font-semibold text-gray-800">{{ cat_labels.get(ocorrencia.categoria, ocorrencia.categoria) }}</p>
+          </div>
+
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Prioridade</p>
+            {% if ocorrencia.prioridade == 'alta' %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600">Alta</span>
+            {% elif ocorrencia.prioridade == 'media' %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700">Média</span>
+            {% else %}
+              <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">Baixa</span>
+            {% endif %}
+          </div>
+
+          <div>
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Risco</p>
+            {% set risco_cfg = {
+              'alto':  ('text-red-600',    'Alto'),
+              'medio': ('text-yellow-700', 'Médio'),
+              'baixo': ('text-green-700',  'Baixo'),
+            } %}
+            {% set r_color, r_label = risco_cfg.get(ocorrencia.risco, ('text-gray-600', ocorrencia.risco)) %}
+            <p class="text-sm font-semibold {{ r_color }}">{{ r_label }}</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Status atual</p>
+          {% set sc = {
+            'registrada':  'bg-gray-100 text-gray-700 border-gray-300',
+            'em_analise':  'bg-amber-50 text-amber-800 border-amber-300',
+            'planejada':   'bg-blue-50 text-blue-800 border-blue-300',
+            'executada':   'bg-emerald-50 text-emerald-800 border-emerald-300',
+            'nao_procede': 'bg-rose-50 text-rose-700 border-rose-300',
+          } %}
+          {% set sl = {
+            'registrada': 'Registrada', 'em_analise': 'Em análise',
+            'planejada': 'Planejada', 'executada': 'Executada', 'nao_procede': 'Não procede',
+          } %}
+          <span class="inline-block px-3 py-1 rounded border text-sm font-semibold {{ sc.get(ocorrencia.status, 'bg-gray-100 text-gray-700 border-gray-300') }}">
+            {{ sl.get(ocorrencia.status, ocorrencia.status) }}
+          </span>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Descrição</p>
+          <p class="text-sm text-gray-700 leading-relaxed">{{ ocorrencia.descricao }}</p>
+        </div>
+
+        {% if ocorrencia.material_sugerido %}
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Material sugerido</p>
+          <p class="text-sm text-gray-700">{{ ocorrencia.material_sugerido }}</p>
+        </div>
+        {% endif %}
+
+        {% if ocorrencia.observacoes %}
+        <div>
+          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Observações do colaborador</p>
+          <p class="text-sm text-gray-600 italic leading-relaxed whitespace-pre-line">{{ ocorrencia.observacoes }}</p>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    {# Observações da coordenação (exibição) #}
+    {% if ocorrencia.observacoes_coordenacao %}
+    <div class="bg-white border border-ifce/20 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-ifce/10 bg-ifce/5">
+        <p class="text-xs font-bold text-ifce uppercase tracking-widest">Observações da coordenação</p>
+      </div>
+      <div class="px-4 py-3">
+        <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ ocorrencia.observacoes_coordenacao }}</p>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+
+  {# ═══════════════════════════════════════
+     Coluna direita — Formulário de atualização
+  ═══════════════════════════════════════ #}
+  <div class="lg:col-span-1">
+    <div class="bg-white border border-ifce/30 rounded-lg shadow-sm overflow-hidden sticky top-4">
+      <div class="px-4 py-3 border-b border-gray-100 bg-ifce/5">
+        <p class="text-xs font-bold text-ifce uppercase tracking-widest">Atualizar ocorrência</p>
+        <p class="text-xs text-gray-400 mt-0.5">Apenas coordenação / admin</p>
+      </div>
+      <form method="post" action="{{ url_for('admin.ocorrencias_detalhe', id=ocorrencia.id) }}"
+            class="px-4 py-4 space-y-4">
+        {{ form.hidden_tag() }}
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            {{ form.status.label.text }}
+          </label>
+          {{ form.status(class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-ifce focus:border-ifce transition") }}
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            {{ form.prioridade.label.text }}
+          </label>
+          {{ form.prioridade(class="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-ifce focus:border-ifce transition") }}
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+            {{ form.observacoes_coordenacao.label.text }}
+          </label>
+          {{ form.observacoes_coordenacao(
+            class="w-full border border-gray-300 rounded px-2 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-ifce focus:border-ifce transition resize-none",
+            rows=5,
+            placeholder="Anotações internas da coordenação..."
+          ) }}
+        </div>
+
+        {{ form.submit(class="w-full bg-ifce text-white text-sm font-bold py-2 rounded hover:bg-ifce-dark transition cursor-pointer") }}
+      </form>
+    </div>
+
+    {# Vínculo com outras ocorrências do mesmo ambiente #}
+    {% set outras = ocorrencia.vistoria.ocorrencias | rejectattr('id', 'equalto', ocorrencia.id) | list %}
+    {% if outras %}
+    <div class="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-bold text-gray-500 uppercase tracking-widest">
+          Outras ocorrências desta vistoria ({{ outras | length }})
+        </p>
+      </div>
+      <ul class="divide-y divide-gray-50">
+        {% for o in outras %}
+        <li class="px-4 py-2.5 flex items-center justify-between gap-2">
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-gray-700 truncate">#{{ o.id }} — {{ o.categoria }}</p>
+            <p class="text-xs text-gray-400 truncate">{{ o.descricao[:60] }}{% if o.descricao | length > 60 %}…{% endif %}</p>
+          </div>
+          <a href="{{ url_for('admin.ocorrencias_detalhe', id=o.id) }}"
+             class="flex-shrink-0 text-xs text-ifce font-semibold hover:underline">→</a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+  </div>
+
+</div>
+{% endblock %}

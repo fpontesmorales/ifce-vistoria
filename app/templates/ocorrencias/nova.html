@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% block title %}Nova Ocorrência — Vistoria #{{ vistoria.id }}{% endblock %}
+
+{% block content %}
+
+{# ── Breadcrumb ─────────────────────────────────────────────────────────────── #}
+<div class="mb-1">
+  <nav class="flex items-center gap-1.5 text-xs text-gray-400">
+    <a href="{{ url_for('colaborador.painel') }}" class="hover:text-ifce transition">Painel</a>
+    <span>/</span>
+    <a href="{{ url_for('colaborador.historico') }}" class="hover:text-ifce transition">Histórico</a>
+    <span>/</span>
+    <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+       class="hover:text-ifce transition">Vistoria #{{ vistoria.id }}</a>
+    <span>/</span>
+    <span class="text-gray-600 font-medium">Nova ocorrência</span>
+  </nav>
+</div>
+
+{# ── Cabeçalho ──────────────────────────────────────────────────────────────── #}
+<div class="mb-6 mt-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+  <div>
+    <p class="text-xs font-semibold text-ifce uppercase tracking-widest mb-1">Registrar ocorrência</p>
+    <h1 class="text-2xl font-bold text-gray-900 leading-tight">
+      {{ vistoria.ambiente.nome }}
+    </h1>
+    <p class="text-sm text-gray-500 mt-0.5">
+      Bloco: <span class="font-medium text-gray-700">{{ vistoria.bloco.nome }}</span>
+      &nbsp;·&nbsp;
+      Vistoria de <span class="font-medium text-gray-700">{{ vistoria.data_vistoria.strftime('%d/%m/%Y') }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+     class="self-start sm:self-auto text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition">
+    ← Voltar à vistoria
+  </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  {# ── Formulário ─────────────────────────────────────────────────────────────── #}
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-sm font-semibold text-gray-700">Dados da ocorrência</h2>
+      </div>
+
+      <form method="POST" novalidate class="px-6 py-5 space-y-5">
+        {{ form.hidden_tag() }}
+
+        {# Categoria #}
+        <div>
+          <label for="{{ form.categoria.id }}"
+                 class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            {{ form.categoria.label.text }}
+            <span class="text-rose-500 ml-0.5">*</span>
+          </label>
+          {{ form.categoria(
+               class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition bg-white " +
+                      ("border-rose-400" if form.categoria.errors else "border-gray-300")
+          ) }}
+          {% for e in form.categoria.errors %}
+            <p class="mt-1 text-xs text-rose-500">{{ e }}</p>
+          {% endfor %}
+        </div>
+
+        {# Descrição #}
+        <div>
+          <label for="{{ form.descricao.id }}"
+                 class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            {{ form.descricao.label.text }}
+            <span class="text-rose-500 ml-0.5">*</span>
+          </label>
+          {{ form.descricao(
+               class="w-full rounded-lg border px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition " +
+                      ("border-rose-400" if form.descricao.errors else "border-gray-300")
+          ) }}
+          {% for e in form.descricao.errors %}
+            <p class="mt-1 text-xs text-rose-500">{{ e }}</p>
+          {% endfor %}
+        </div>
+
+        {# Prioridade + Risco #}
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="{{ form.prioridade.id }}"
+                   class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+              {{ form.prioridade.label.text }}
+              <span class="text-rose-500 ml-0.5">*</span>
+            </label>
+            {{ form.prioridade(
+                 class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition bg-white " +
+                        ("border-rose-400" if form.prioridade.errors else "border-gray-300"),
+                 id="sel-prioridade"
+            ) }}
+            {% for e in form.prioridade.errors %}
+              <p class="mt-1 text-xs text-rose-500">{{ e }}</p>
+            {% endfor %}
+          </div>
+
+          <div>
+            <label for="{{ form.risco.id }}"
+                   class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+              {{ form.risco.label.text }}
+            </label>
+            {{ form.risco(
+                 class="w-full rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition bg-white " +
+                        ("border-rose-400" if form.risco.errors else "border-gray-300"),
+                 id="sel-risco"
+            ) }}
+          </div>
+        </div>
+
+        {# Indicador visual prioridade/risco #}
+        <div id="alerta-nivel" class="hidden rounded-lg px-4 py-2.5 text-xs font-medium flex items-center gap-2">
+          <span id="alerta-icone"></span>
+          <span id="alerta-texto"></span>
+        </div>
+
+        {# Material sugerido #}
+        <div>
+          <label for="{{ form.material_sugerido.id }}"
+                 class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            {{ form.material_sugerido.label.text }}
+            <span class="text-gray-400 font-normal ml-1">(opcional)</span>
+          </label>
+          {{ form.material_sugerido(
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition"
+          ) }}
+        </div>
+
+        {# Observações #}
+        <div>
+          <label for="{{ form.observacoes.id }}"
+                 class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            {{ form.observacoes.label.text }}
+            <span class="text-gray-400 font-normal ml-1">(opcional)</span>
+          </label>
+          {{ form.observacoes(
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition"
+          ) }}
+        </div>
+
+        {# Ações #}
+        <div class="flex items-center gap-3 pt-1 border-t border-gray-100">
+          {{ form.submit(
+               class="inline-flex items-center gap-2 bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2"
+          ) }}
+          <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+             class="text-sm text-gray-500 hover:text-gray-700 transition">
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Painel lateral: contexto da vistoria ────────────────────────────────────── #}
+  <div class="space-y-4">
+
+    {# Resumo da vistoria #}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Vistoria vinculada</p>
+
+      <div class="flex items-center gap-3 mb-3">
+        {% if vistoria.situacao_geral == 'com_pendencia' %}
+          <div class="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-rose-700">Com pendência</p>
+            <p class="text-xs text-gray-400">Requer atenção</p>
+          </div>
+        {% else %}
+          <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-4 h-4 text-ifce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <div>
+            <p class="text-sm font-semibold text-green-700">OK</p>
+            <p class="text-xs text-gray-400">Sem pendências</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="space-y-2 text-xs">
+        <div class="flex justify-between">
+          <span class="text-gray-400">Ambiente</span>
+          <span class="font-medium text-gray-700">{{ vistoria.ambiente.nome }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Bloco</span>
+          <span class="font-medium text-gray-700">{{ vistoria.bloco.nome }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Data</span>
+          <span class="font-medium text-gray-700">{{ vistoria.data_vistoria.strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Ocorrências</span>
+          <span class="font-medium text-gray-700">{{ vistoria.ocorrencias | length }}</span>
+        </div>
+      </div>
+    </div>
+
+    {# Ocorrências já registradas #}
+    {% if vistoria.ocorrencias %}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+          Já registradas ({{ vistoria.ocorrencias | length }})
+        </p>
+      </div>
+      <ul class="divide-y divide-gray-100">
+        {% for oc in vistoria.ocorrencias %}
+        <li class="px-5 py-3 flex items-start gap-2">
+          {% if oc.prioridade == 'alta' %}
+            <span class="mt-1.5 w-2 h-2 rounded-full bg-rose-500 flex-shrink-0"></span>
+          {% elif oc.prioridade == 'media' %}
+            <span class="mt-1.5 w-2 h-2 rounded-full bg-amber-400 flex-shrink-0"></span>
+          {% else %}
+            <span class="mt-1.5 w-2 h-2 rounded-full bg-green-400 flex-shrink-0"></span>
+          {% endif %}
+          <div class="min-w-0">
+            <p class="text-xs font-semibold text-gray-500 uppercase">
+              {{ dict(oc.CATEGORIAS).get(oc.categoria, oc.categoria) }}
+            </p>
+            <p class="text-xs text-gray-700 line-clamp-2">{{ oc.descricao }}</p>
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    {# Links de saída #}
+    <div class="bg-gray-50 rounded-xl border border-gray-200 px-5 py-4 space-y-2">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">Após registrar, ir para</p>
+      <a href="{{ url_for('vistorias.detalhe', vistoria_id=vistoria.id) }}"
+         class="flex items-center gap-2 text-sm text-gray-600 hover:text-ifce transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        Detalhe da vistoria
+      </a>
+      <a href="{{ url_for('colaborador.ambientes_do_bloco', bloco_id=vistoria.bloco_id) }}"
+         class="flex items-center gap-2 text-sm text-gray-600 hover:text-ifce transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        Ambientes do bloco
+      </a>
+      <a href="{{ url_for('colaborador.painel') }}"
+         class="flex items-center gap-2 text-sm text-gray-600 hover:text-ifce transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+        </svg>
+        Painel
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Indicador visual de severidade combinada prioridade + risco
+  var selPrioridade = document.getElementById('sel-prioridade');
+  var selRisco      = document.getElementById('sel-risco');
+  var alerta        = document.getElementById('alerta-nivel');
+  var alertaTexto   = document.getElementById('alerta-texto');
+  var alertaIcone   = document.getElementById('alerta-icone');
+
+  function nivelNum(v, map) { return map[v] || 0; }
+
+  var mapPrio = { baixa: 1, media: 2, alta: 3 };
+  var mapRisco = { baixo: 1, medio: 2, alto: 3 };
+
+  function atualizarAlerta() {
+    var p = nivelNum(selPrioridade.value, mapPrio);
+    var r = nivelNum(selRisco.value, mapRisco);
+    var soma = p + r;
+    alerta.classList.remove('hidden', 'bg-rose-50', 'text-rose-700', 'bg-amber-50', 'text-amber-700', 'bg-blue-50', 'text-blue-700');
+
+    if (soma >= 5) {
+      alerta.classList.add('bg-rose-50', 'text-rose-700');
+      alertaIcone.textContent = '🔴';
+      alertaTexto.textContent = 'Atenção: combinação de prioridade e risco elevada. A coordenação será acionada.';
+    } else if (soma >= 3) {
+      alerta.classList.add('bg-amber-50', 'text-amber-700');
+      alertaIcone.textContent = '🟡';
+      alertaTexto.textContent = 'Severidade moderada — recomenda-se descrição detalhada.';
+    } else {
+      alerta.classList.add('bg-blue-50', 'text-blue-700');
+      alertaIcone.textContent = '🔵';
+      alertaTexto.textContent = 'Severidade baixa — ocorrência registrada para acompanhamento.';
+    }
+    alerta.classList.remove('hidden');
+  }
+
+  selPrioridade.addEventListener('change', atualizarAlerta);
+  selRisco.addEventListener('change', atualizarAlerta);
+  atualizarAlerta();
+</script>
+
+{% endblock %}

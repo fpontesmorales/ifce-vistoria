@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}{{ bloco.nome }} — Ambientes{% endblock %}
+
+{% block extra_head %}
+<style>
+  .amb-ok         { border-left: 4px solid #006633; }
+  .amb-pendencia  { border-left: 4px solid #f43f5e; }
+  .amb-novo       { border-left: 4px solid #f59e0b; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Breadcrumb e cabeçalho ─────────────────────────────────────────────────── #}
+<div class="mb-1">
+  <nav class="flex items-center gap-1.5 text-xs text-gray-400">
+    <a href="{{ url_for('colaborador.painel') }}" class="hover:text-ifce transition">Painel</a>
+    <span>/</span>
+    <a href="{{ url_for('colaborador.blocos') }}" class="hover:text-ifce transition">Blocos</a>
+    <span>/</span>
+    <span class="text-gray-600 font-medium">{{ bloco.nome }}</span>
+  </nav>
+</div>
+
+<div class="mb-6 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mt-3">
+  <div>
+    <p class="text-xs font-semibold text-ifce uppercase tracking-widest mb-1">Ambientes</p>
+    <h1 class="text-2xl font-bold text-gray-900 leading-tight">{{ bloco.nome }}</h1>
+    {% if bloco.descricao %}
+      <p class="text-sm text-gray-500 mt-0.5">{{ bloco.descricao }}</p>
+    {% endif %}
+  </div>
+  <a href="{{ url_for('colaborador.blocos') }}"
+     class="self-start sm:self-auto text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition">
+    ← Voltar aos blocos
+  </a>
+</div>
+
+{# ── Resumo rápido ───────────────────────────────────────────────────────────── #}
+{% if ambientes %}
+<div class="grid grid-cols-3 gap-3 mb-6">
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-4 py-3 text-center">
+    <p class="text-2xl font-bold text-gray-700">{{ ambientes | length }}</p>
+    <p class="text-xs text-gray-400 uppercase tracking-wide mt-0.5">Total</p>
+  </div>
+  <div class="rounded-xl border shadow-sm px-4 py-3 text-center
+    {% if nao_vistoriados > 0 %}bg-amber-50 border-amber-200{% else %}bg-white border-gray-200{% endif %}">
+    <p class="text-2xl font-bold {% if nao_vistoriados > 0 %}text-amber-500{% else %}text-gray-300{% endif %}">
+      {{ nao_vistoriados }}
+    </p>
+    <p class="text-xs text-gray-400 uppercase tracking-wide mt-0.5">Não vistoriados</p>
+  </div>
+  <div class="rounded-xl border shadow-sm px-4 py-3 text-center
+    {% if com_pendencia > 0 %}bg-rose-50 border-rose-200{% else %}bg-white border-gray-200{% endif %}">
+    <p class="text-2xl font-bold {% if com_pendencia > 0 %}text-rose-500{% else %}text-gray-300{% endif %}">
+      {{ com_pendencia }}
+    </p>
+    <p class="text-xs text-gray-400 uppercase tracking-wide mt-0.5">Com pendência</p>
+  </div>
+</div>
+
+{# ── Legenda ─────────────────────────────────────────────────────────────────── #}
+<div class="flex flex-wrap gap-3 mb-4">
+  <div class="flex items-center gap-1.5 text-xs text-gray-500">
+    <span class="inline-block w-3 h-3 rounded-sm bg-amber-400"></span> Não vistoriado
+  </div>
+  <div class="flex items-center gap-1.5 text-xs text-gray-500">
+    <span class="inline-block w-3 h-3 rounded-sm bg-rose-400"></span> Com pendência
+  </div>
+  <div class="flex items-center gap-1.5 text-xs text-gray-500">
+    <span class="inline-block w-3 h-3 rounded-sm bg-ifce"></span> OK
+  </div>
+</div>
+
+{# ── Lista de ambientes ──────────────────────────────────────────────────────── #}
+<div class="space-y-2">
+  {% for amb in ambientes %}
+  {% set ultima = ultima_por_ambiente.get(amb.id) %}
+
+  {% if ultima is none %}
+    {% set classe_borda = 'amb-novo' %}
+    {% set classe_bg = 'bg-amber-50 hover:bg-amber-100' %}
+  {% elif ultima.situacao_geral == 'com_pendencia' %}
+    {% set classe_borda = 'amb-pendencia' %}
+    {% set classe_bg = 'bg-rose-50 hover:bg-rose-100' %}
+  {% else %}
+    {% set classe_borda = 'amb-ok' %}
+    {% set classe_bg = 'bg-white hover:bg-green-50' %}
+  {% endif %}
+
+  <div class="rounded-xl border border-gray-200 shadow-sm transition-colors {{ classe_borda }} {{ classe_bg }}">
+    <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+
+      {# Nome e status #}
+      <div class="flex items-start gap-3 min-w-0">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-2">
+            <h3 class="text-sm font-semibold text-gray-800">{{ amb.nome }}</h3>
+
+            {% if ultima is none %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
+                           bg-amber-100 text-amber-700 uppercase tracking-wide">
+                Não vistoriado
+              </span>
+            {% elif ultima.situacao_geral == 'com_pendencia' %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
+                           bg-rose-100 text-rose-700 uppercase tracking-wide">
+                Com pendência
+              </span>
+            {% else %}
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
+                           bg-green-100 text-green-700 uppercase tracking-wide">
+                OK
+              </span>
+            {% endif %}
+          </div>
+
+          {% if amb.descricao %}
+            <p class="text-xs text-gray-400 mt-0.5">{{ amb.descricao }}</p>
+          {% endif %}
+
+          {# Metadados da última vistoria #}
+          <div class="flex flex-wrap gap-3 mt-2">
+            <span class="flex items-center gap-1 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              {% if ultima %}
+                {{ ultima.data_vistoria.strftime('%d/%m/%Y') }}
+              {% else %}
+                <span class="text-gray-400 italic">Nunca vistoriado</span>
+              {% endif %}
+            </span>
+
+            <span class="flex items-center gap-1 text-xs text-gray-500">
+              <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+              {% if ultima and ultima.colaborador %}
+                {{ ultima.colaborador.nome_exibicao }}
+              {% else %}
+                <span class="text-gray-400 italic">—</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {# Ação #}
+      <div class="flex-shrink-0">
+        <a href="{{ url_for('vistorias.nova', ambiente_id=amb.id) }}"
+           class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition
+             {% if ultima is none %}
+               bg-amber-500 hover:bg-amber-600 text-white
+             {% elif ultima.situacao_geral == 'com_pendencia' %}
+               bg-rose-500 hover:bg-rose-600 text-white
+             {% else %}
+               bg-ifce hover:bg-green-700 text-white
+             {% endif %}">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 4v16m8-8H4"/>
+          </svg>
+          Nova vistoria
+        </a>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-16 text-center">
+  <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+  </svg>
+  <p class="text-gray-500 text-sm font-medium">Nenhum ambiente ativo neste bloco</p>
+  <p class="text-gray-400 text-xs mt-1">Contate a coordenação para cadastrar os ambientes.</p>
+</div>
+{% endif %}
+
+{% endblock %}

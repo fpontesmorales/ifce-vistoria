@@ -1,0 +1,438 @@
+{% extends "base.html" %}
+{% block title %}Ocorrências{% endblock %}
+
+{% block extra_head %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var selBloco    = document.getElementById('sel-bloco');
+    var selAmbiente = document.getElementById('sel-ambiente');
+    if (!selBloco || !selAmbiente) return;
+
+    var allOptions = Array.from(selAmbiente.options);  // snapshot completo
+
+    function filtrarAmbientes() {
+      var blocoId = selBloco.value;
+      var valorAtual = selAmbiente.value;
+
+      // Reconstrói as options visíveis
+      while (selAmbiente.options.length > 0) selAmbiente.remove(0);
+
+      allOptions.forEach(function (opt) {
+        if (!blocoId || !opt.dataset.bloco || opt.dataset.bloco === blocoId || opt.value === '') {
+          selAmbiente.add(opt.cloneNode(true));
+        }
+      });
+
+      // Mantém seleção se ainda visível, senão limpa
+      selAmbiente.value = valorAtual;
+      if (selAmbiente.value !== valorAtual) selAmbiente.value = '';
+    }
+
+    selBloco.addEventListener('change', filtrarAmbientes);
+    filtrarAmbientes();  // aplica ao carregar a página
+  });
+</script>
+{% endblock %}
+
+{% block content %}
+
+{# ── Cabeçalho ── #}
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Ocorrências</h1>
+    <p class="text-sm text-gray-400 mt-0.5">Triagem e acompanhamento · {{ pagination.total }} registro(s) encontrado(s)</p>
+  </div>
+</div>
+
+{# ── Indicadores por status (totais globais, clicáveis) ── #}
+{% set stat_cfg = [
+  ('registrada',  'Registradas',  stats_status.get('registrada', 0),
+   'bg-gray-50 border-gray-200 text-gray-700', 'border-l-4 border-l-gray-400'),
+  ('em_analise',  'Em análise',   stats_status.get('em_analise', 0),
+   'bg-amber-50 border-amber-200 text-amber-800', 'border-l-4 border-l-amber-400'),
+  ('planejada',   'Planejadas',   stats_status.get('planejada', 0),
+   'bg-blue-50 border-blue-200 text-blue-800', 'border-l-4 border-l-blue-400'),
+  ('executada',   'Executadas',   stats_status.get('executada', 0),
+   'bg-emerald-50 border-emerald-200 text-emerald-800', 'border-l-4 border-l-emerald-500'),
+  ('nao_procede', 'Não procedem', stats_status.get('nao_procede', 0),
+   'bg-rose-50 border-rose-200 text-rose-700', 'border-l-4 border-l-rose-400'),
+] %}
+<div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+  {% for val, lbl, cnt, cls, border_cls in stat_cfg %}
+  <a href="{{ url_for('admin.ocorrencias_lista', status=val) }}"
+     class="group border rounded-lg px-4 py-3 {{ cls }} {{ border_cls }} transition-all hover:shadow-md
+            {% if status_filtro == val %}ring-2 ring-inset ring-current shadow-sm{% endif %}">
+    <p class="text-3xl font-bold leading-none tabular-nums">{{ cnt }}</p>
+    <p class="text-xs font-semibold uppercase tracking-wide mt-1.5 opacity-60 group-hover:opacity-90 transition-opacity">{{ lbl }}</p>
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Painel de Filtros ── #}
+{% set tem_filtro = status_filtro or prioridade_filtro or categoria_filtro or bloco_id_filtro or ambiente_id_filtro or colaborador_id_filtro or data_inicio_filtro or data_fim_filtro %}
+{% set n_filtros = (1 if status_filtro else 0)
+                 + (1 if prioridade_filtro else 0)
+                 + (1 if categoria_filtro else 0)
+                 + (1 if bloco_id_filtro else 0)
+                 + (1 if ambiente_id_filtro else 0)
+                 + (1 if colaborador_id_filtro else 0)
+                 + (1 if data_inicio_filtro else 0)
+                 + (1 if data_fim_filtro else 0) %}
+
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm mb-5">
+  <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+    <p class="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+      <svg class="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+      </svg>
+      Filtros
+      {% if n_filtros > 0 %}
+      <span class="bg-ifce text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">{{ n_filtros }}</span>
+      {% endif %}
+    </p>
+    {% if tem_filtro %}
+    <a href="{{ url_for('admin.ocorrencias_lista') }}"
+       class="text-xs text-gray-400 hover:text-red-500 transition font-medium flex items-center gap-1">
+      <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+      Limpar filtros
+    </a>
+    {% endif %}
+  </div>
+  <form method="get" action="{{ url_for('admin.ocorrencias_lista') }}" class="px-4 py-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3 mb-4">
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Status</label>
+        <select name="status"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+          <option value="">Todos</option>
+          {% for val, label in STATUS_CHOICES %}
+            <option value="{{ val }}" {% if val == status_filtro %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Prioridade</label>
+        <select name="prioridade"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+          <option value="">Todas</option>
+          {% for val, label in PRIORIDADE_CHOICES %}
+            <option value="{{ val }}" {% if val == prioridade_filtro %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Categoria</label>
+        <select name="categoria"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+          <option value="">Todas</option>
+          {% for val, label in CATEGORIA_CHOICES %}
+            <option value="{{ val }}" {% if val == categoria_filtro %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Bloco</label>
+        <select id="sel-bloco" name="bloco_id"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+          <option value="">Todos</option>
+          {% for b in blocos %}
+            <option value="{{ b.id }}" {% if b.id == bloco_id_filtro %}selected{% endif %}>{{ b.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Ambiente</label>
+        <select id="sel-ambiente" name="ambiente_id"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+          <option value="">Todos</option>
+          {% for a in ambientes %}
+            <option value="{{ a.id }}" data-bloco="{{ a.bloco_id }}"
+                    {% if a.id == ambiente_id_filtro %}selected{% endif %}>
+              {{ a.bloco.nome }} / {{ a.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Colaborador</label>
+        <select name="colaborador_id"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+          <option value="">Todos</option>
+          {% for c in colaboradores %}
+            <option value="{{ c.id }}" {% if c.id == colaborador_id_filtro %}selected{% endif %}>{{ c.nome_exibicao }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Período — início</label>
+        <input type="date" name="data_inicio" value="{{ data_inicio_filtro }}"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Período — fim</label>
+        <input type="date" name="data_fim" value="{{ data_fim_filtro }}"
+               class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition">
+      </div>
+
+    </div>
+    <button type="submit"
+            class="inline-flex items-center gap-2 bg-ifce text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-ifce-dark transition focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 018 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/>
+      </svg>
+      Aplicar filtros
+    </button>
+  </form>
+</div>
+
+{%- macro page_url(p) -%}{{ url_for('admin.ocorrencias_lista', page=p,
+  status=status_filtro, prioridade=prioridade_filtro, categoria=categoria_filtro,
+  bloco_id=bloco_id_filtro, ambiente_id=ambiente_id_filtro,
+  colaborador_id=colaborador_id_filtro,
+  data_inicio=data_inicio_filtro, data_fim=data_fim_filtro) }}{%- endmacro -%}
+
+{# ── Lista de ocorrências ── #}
+{% if ocorrencias %}
+
+{# ══ VIEW MOBILE: cards (oculto em md+) ══ #}
+<div class="md:hidden space-y-3 mb-4">
+  {% for o in ocorrencias %}
+  {% set borda = 'border-l-4 border-l-red-400' if (o.prioridade == 'alta' and o.status in ['registrada', 'em_analise']) else '' %}
+  <a href="{{ url_for('admin.ocorrencias_detalhe', id=o.id) }}"
+     class="block bg-white border border-gray-200 rounded-xl shadow-sm p-4
+            hover:shadow-md transition-shadow {{ borda }}">
+
+    {# Linha 1: ID + badges #}
+    <div class="flex items-start justify-between gap-2 mb-2">
+      <div class="flex items-center gap-1.5 flex-wrap">
+        {# Prioridade #}
+        {% if o.prioridade == 'alta' %}
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600">Alta</span>
+        {% elif o.prioridade == 'media' %}
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700">Média</span>
+        {% else %}
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">Baixa</span>
+        {% endif %}
+        {# Status #}
+        {% set sc = {'registrada':'bg-gray-100 text-gray-600','em_analise':'bg-amber-100 text-amber-700',
+                     'planejada':'bg-blue-100 text-blue-700','executada':'bg-emerald-100 text-emerald-700',
+                     'nao_procede':'bg-rose-100 text-rose-600'} %}
+        {% set sl = {'registrada':'Registrada','em_analise':'Em análise','planejada':'Planejada',
+                     'executada':'Executada','nao_procede':'Não procede'} %}
+        <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {{ sc.get(o.status,'bg-gray-100 text-gray-500') }}">
+          {{ sl.get(o.status, o.status) }}
+        </span>
+      </div>
+      <span class="text-xs text-gray-400 font-mono flex-shrink-0">#{{ o.id }}</span>
+    </div>
+
+    {# Linha 2: local #}
+    <p class="text-sm font-semibold text-gray-800 leading-tight">
+      {{ o.vistoria.bloco.nome }} — {{ o.vistoria.ambiente.nome }}
+    </p>
+
+    {# Linha 3: descrição truncada #}
+    <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ o.descricao }}</p>
+
+    {# Linha 4: meta #}
+    <div class="flex items-center justify-between mt-2 text-xs text-gray-400">
+      <span>{{ o.vistoria.colaborador.nome_exibicao }}</span>
+      <span>{{ o.criado_em.strftime('%d/%m/%Y') }}</span>
+    </div>
+
+  </a>
+  {% endfor %}
+</div>
+
+{# ══ VIEW DESKTOP: tabela (oculta em < md) ══ #}
+<div class="hidden md:block bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wide">
+        <th class="px-4 py-2.5 text-left w-10">#</th>
+        <th class="px-4 py-2.5 text-left">Bloco / Ambiente</th>
+        <th class="px-4 py-2.5 text-left hidden md:table-cell">Colaborador</th>
+        <th class="px-4 py-2.5 text-left hidden lg:table-cell">Categoria</th>
+        <th class="px-4 py-2.5 text-left">Descrição</th>
+        <th class="px-4 py-2.5 text-center">Prior.</th>
+        <th class="px-4 py-2.5 text-center">Status</th>
+        <th class="px-4 py-2.5 text-right hidden sm:table-cell">Data</th>
+        <th class="px-4 py-2.5 w-8"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-50">
+      {% for o in ocorrencias %}
+      {# Destaque visual para alta prioridade ainda aberta #}
+      {% if o.prioridade == 'alta' and o.status in ['registrada', 'em_analise'] %}
+        {% set tr_cls = 'border-l-2 border-l-red-400 bg-red-50/30 hover:bg-red-50/60 transition' %}
+      {% else %}
+        {% set tr_cls = 'hover:bg-gray-50 transition' %}
+      {% endif %}
+      <tr class="{{ tr_cls }}">
+
+        <td class="px-4 py-2.5 text-gray-400 font-mono text-xs">{{ o.id }}</td>
+
+        <td class="px-4 py-2.5">
+          <p class="font-semibold text-gray-800 leading-tight text-sm">{{ o.vistoria.bloco.nome }}</p>
+          <p class="text-xs text-gray-400 mt-0.5">{{ o.vistoria.ambiente.nome }}</p>
+        </td>
+
+        <td class="px-4 py-2.5 text-xs text-gray-500 hidden md:table-cell">
+          {{ o.vistoria.colaborador.nome_exibicao }}
+        </td>
+
+        <td class="px-4 py-2.5 text-xs text-gray-500 hidden lg:table-cell">
+          {% set cat_labels = {
+            'eletrica': 'Elétrica', 'hidraulica': 'Hidráulica', 'civil': 'Civil',
+            'pintura': 'Pintura', 'esquadrias': 'Esquadrias', 'cobertura': 'Cobertura',
+            'mobiliario': 'Mobiliário', 'limpeza_conservacao': 'Limpeza', 'seguranca': 'Segurança',
+            'outros': 'Outros',
+          } %}
+          {{ cat_labels.get(o.categoria, o.categoria) }}
+        </td>
+
+        <td class="px-4 py-2.5 text-gray-600 max-w-xs">
+          <p class="truncate text-sm">{{ o.descricao }}</p>
+        </td>
+
+        <td class="px-4 py-2.5 text-center">
+          {% if o.prioridade == 'alta' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-600">Alta</span>
+          {% elif o.prioridade == 'media' %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-yellow-100 text-yellow-700">Média</span>
+          {% else %}
+            <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">Baixa</span>
+          {% endif %}
+        </td>
+
+        <td class="px-4 py-2.5 text-center">
+          {% set sc = {
+            'registrada':  'bg-gray-100 text-gray-600',
+            'em_analise':  'bg-amber-100 text-amber-700',
+            'planejada':   'bg-blue-100 text-blue-700',
+            'executada':   'bg-emerald-100 text-emerald-700',
+            'nao_procede': 'bg-rose-100 text-rose-600',
+          } %}
+          {% set sl = {
+            'registrada': 'Registrada', 'em_analise': 'Em análise',
+            'planejada': 'Planejada', 'executada': 'Executada', 'nao_procede': 'Não procede',
+          } %}
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold {{ sc.get(o.status, 'bg-gray-100 text-gray-500') }}">
+            {{ sl.get(o.status, o.status) }}
+          </span>
+        </td>
+
+        <td class="px-4 py-2.5 text-right text-xs text-gray-400 whitespace-nowrap hidden sm:table-cell">
+          {{ o.criado_em.strftime('%d/%m/%Y') }}
+        </td>
+
+        <td class="px-4 py-2.5 text-right">
+          <a href="{{ url_for('admin.ocorrencias_detalhe', id=o.id) }}"
+             class="inline-flex items-center gap-1 text-xs font-semibold text-ifce hover:text-ifce-dark
+                    transition group whitespace-nowrap">
+            Ver
+            <svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="px-4 py-2.5 border-t border-gray-100 bg-gray-50 text-xs text-gray-400 text-right">
+    {{ pagination.total }} ocorrência(s) · Linhas com borda vermelha indicam alta prioridade pendente de ação
+  </div>
+</div>{# /tabela desktop #}
+</div>{# /hidden md:block #}
+
+{# ── Paginação ── #}
+{% if pagination.pages > 1 %}
+<div class="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3
+            bg-white border border-gray-200 rounded-lg shadow-sm px-4 py-3">
+  <p class="text-xs text-gray-500 order-2 sm:order-1">
+    Página <span class="font-semibold text-gray-700">{{ pagination.page }}</span>
+    de <span class="font-semibold text-gray-700">{{ pagination.pages }}</span>
+    · {{ pagination.total }} registros
+  </p>
+  <div class="flex items-center gap-1 order-1 sm:order-2">
+    {# Anterior #}
+    {% if pagination.has_prev %}
+    <a href="{{ page_url(pagination.prev_num) }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600
+              bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition">
+      ← Anterior
+    </a>
+    {% else %}
+    <span class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-300
+                 bg-white border border-gray-100 cursor-not-allowed select-none">
+      ← Anterior
+    </span>
+    {% endif %}
+
+    {# Números de página #}
+    {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+      {% if p %}
+        {% if p == pagination.page %}
+        <span class="px-3 py-1.5 rounded-md text-sm font-bold text-white bg-ifce border border-ifce select-none">
+          {{ p }}
+        </span>
+        {% else %}
+        <a href="{{ page_url(p) }}"
+           class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600
+                  bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition">
+          {{ p }}
+        </a>
+        {% endif %}
+      {% else %}
+        <span class="px-2 py-1.5 text-sm text-gray-300 select-none">…</span>
+      {% endif %}
+    {% endfor %}
+
+    {# Próxima #}
+    {% if pagination.has_next %}
+    <a href="{{ page_url(pagination.next_num) }}"
+       class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-600
+              bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition">
+      Próxima →
+    </a>
+    {% else %}
+    <span class="px-3 py-1.5 rounded-md text-sm font-medium text-gray-300
+                 bg-white border border-gray-100 cursor-not-allowed select-none">
+      Próxima →
+    </span>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm px-6 py-16 text-center">
+  <svg class="w-10 h-10 mx-auto text-gray-200 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+  </svg>
+  <p class="text-sm font-semibold text-gray-400">Nenhuma ocorrência encontrada</p>
+  {% if tem_filtro %}
+  <a href="{{ url_for('admin.ocorrencias_lista') }}"
+     class="mt-3 inline-block text-sm text-ifce hover:underline">Limpar filtros</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}

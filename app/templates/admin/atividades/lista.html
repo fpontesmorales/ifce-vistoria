@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% from "admin/_macros.html" import badge_status_atividade, btn_novo, btn_editar %}
+{% block title %}Atividades{% endblock %}
+
+{% block content %}
+{# ── Abas ── #}
+<div class="mb-5 flex items-center gap-1 border-b border-gray-200">
+  <a href="{{ url_for('admin.atividades_lista') }}"
+     class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-ifce text-ifce">
+    Lista
+  </a>
+  <a href="{{ url_for('admin.atividades_validacao') }}"
+     class="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors flex items-center gap-1.5">
+    Fila de Validação
+    {% if contagens.get('concluida', 0) > 0 %}
+    <span class="bg-amber-400 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
+      {{ contagens.get('concluida', 0) }}
+    </span>
+    {% endif %}
+  </a>
+</div>
+
+{# ── Cabeçalho ── #}
+<div class="flex items-center justify-between mb-4 gap-3 flex-wrap">
+  <div>
+    <h1 class="text-xl font-bold text-gray-900">Atividades</h1>
+    <p class="text-sm text-gray-500 mt-0.5">{{ atividades|length }} atividade(s) exibida(s)</p>
+  </div>
+  <div class="flex items-center gap-2 flex-wrap">
+    {% set n_concluidas = contagens.get('concluida', 0) %}
+    {% if n_concluidas > 0 %}
+    <a href="{{ url_for('admin.atividades_validacao') }}"
+       class="inline-flex items-center gap-1.5 bg-amber-50 border border-amber-300 text-amber-700
+              text-sm font-semibold px-3.5 py-2 rounded-lg hover:bg-amber-100 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+      </svg>
+      Fila de validação
+      <span class="bg-amber-400 text-white text-xs font-black px-1.5 py-0.5 rounded-full leading-none">
+        {{ n_concluidas }}
+      </span>
+    </a>
+    {% endif %}
+    {{ btn_novo(url_for('admin.atividades_novo'), '+ Nova atividade') }}
+  </div>
+</div>
+
+{# ── Filtros por status ── #}
+{% set filtros = [
+  ('',            'Todas',        contagens.get('pendente', 0) + contagens.get('em_andamento', 0) + contagens.get('concluida', 0) + contagens.get('validada', 0)),
+  ('pendente',    'Pendentes',    contagens.get('pendente', 0)),
+  ('em_andamento','Em andamento', contagens.get('em_andamento', 0)),
+  ('concluida',   'Concluídas',   contagens.get('concluida', 0)),
+  ('validada',    'Validadas',    contagens.get('validada', 0)),
+] %}
+<div class="flex items-center gap-1.5 flex-wrap mb-4">
+  {% for val, label, cnt in filtros %}
+  <a href="{{ url_for('admin.atividades_lista', status=val) if val else url_for('admin.atividades_lista') }}"
+     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+            {% if status_filtro == val %}bg-ifce text-white shadow-sm{% else %}text-gray-500 hover:text-gray-700 hover:bg-gray-100{% endif %}">
+    {{ label }}
+    <span class="text-xs font-bold opacity-70">{{ cnt }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+{# ── Tabela ── #}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  {% if atividades %}
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-50 border-b border-gray-200">
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Título</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden sm:table-cell">Colaborador</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Tipo</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Datas</th>
+        <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Ações</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for at in atividades %}
+      {% set tipo_label = dict(at.TIPOS).get(at.tipo, at.tipo) %}
+      <tr class="hover:bg-gray-50 transition-colors">
+
+        {# Título + local #}
+        <td class="px-5 py-3.5">
+          <div class="font-semibold text-gray-800 leading-snug">{{ at.titulo }}</div>
+          <div class="text-xs text-gray-400 mt-0.5 sm:hidden">{{ at.colaborador.nome_exibicao }}</div>
+          {% if at.bloco %}
+          <div class="text-xs text-gray-400 mt-0.5">
+            {{ at.bloco.nome }}{% if at.ambiente %} / {{ at.ambiente.nome }}{% endif %}
+          </div>
+          {% endif %}
+        </td>
+
+        {# Colaborador #}
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <span class="text-gray-700">{{ at.colaborador.nome_exibicao }}</span>
+        </td>
+
+        {# Tipo #}
+        <td class="px-5 py-3.5 hidden md:table-cell">
+          <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+            {{ tipo_label }}
+          </span>
+        </td>
+
+        {# Status #}
+        <td class="px-5 py-3.5">
+          {{ badge_status_atividade(at.status) }}
+          {% if at.status == 'validada' and at.validado_por_usuario %}
+          <div class="text-xs text-gray-400 mt-1 leading-snug">
+            por {{ at.validado_por_usuario.nome }}<br>
+            {{ at.validado_em.strftime('%d/%m/%Y') if at.validado_em else '' }}
+          </div>
+          {% endif %}
+        </td>
+
+        {# Datas #}
+        <td class="px-5 py-3.5 text-gray-400 text-xs hidden lg:table-cell leading-relaxed">
+          <span>Criada {{ at.criado_em.strftime('%d/%m/%Y') if at.criado_em else '—' }}</span>
+          {% if at.concluido_em %}
+          <br><span>Concluída {{ at.concluido_em.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+          {% if at.validado_em %}
+          <br><span class="text-emerald-600 font-medium">Validada {{ at.validado_em.strftime('%d/%m/%Y') }}</span>
+          {% endif %}
+        </td>
+
+        {# Ações #}
+        <td class="px-5 py-3.5 text-right">
+          <div class="flex items-center justify-end gap-3">
+
+            {# Botão Validar (só para concluída) #}
+            {% if at.status == 'concluida' %}
+            <form action="{{ url_for('admin.atividades_validar', id=at.id) }}" method="POST" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600
+                             hover:text-emerald-800 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                Validar
+              </button>
+            </form>
+            {% endif %}
+
+            {# Botão Reabrir (só para validada) #}
+            {% if at.status == 'validada' %}
+            <form action="{{ url_for('admin.atividades_reabrir', id=at.id) }}" method="POST" class="inline"
+                  onsubmit="return confirm('Reabrir esta atividade para revisão?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="inline-flex items-center gap-1 text-xs font-semibold text-orange-500
+                             hover:text-orange-700 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Reabrir
+              </button>
+            </form>
+            {% endif %}
+
+            {{ btn_editar(url_for('admin.atividades_editar', id=at.id)) }}
+          </div>
+        </td>
+
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% else %}
+  <div class="px-5 py-16 text-center">
+    <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2
+           M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2
+           m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+    </svg>
+    {% if status_filtro %}
+    <p class="text-gray-400 text-sm">Nenhuma atividade com status
+      <strong>{{ dict([('pendente','Pendente'),('em_andamento','Em andamento'),('concluida','Concluída'),('validada','Validada')]).get(status_filtro, status_filtro) }}</strong>.
+    </p>
+    <a href="{{ url_for('admin.atividades_lista') }}"
+       class="text-ifce text-sm font-medium hover:underline mt-1 inline-block">
+      Ver todas →
+    </a>
+    {% else %}
+    <p class="text-gray-400 text-sm">Nenhuma atividade cadastrada.</p>
+    <a href="{{ url_for('admin.atividades_novo') }}"
+       class="text-ifce text-sm font-medium hover:underline mt-1 inline-block">
+      Criar a primeira atividade
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Nova Vistoria — {{ ambiente.nome }}{% endblock %}
+
+{% block extra_head %}
+<style>
+  .field-ok       { outline: 2px solid #006633; outline-offset: 2px; }
+  .field-error    { outline: 2px solid #f43f5e; outline-offset: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# ── Breadcrumb ─────────────────────────────────────────────────────────────── #}
+<div class="mb-1">
+  <nav class="flex items-center gap-1.5 text-xs text-gray-400">
+    <a href="{{ url_for('colaborador.painel') }}" class="hover:text-ifce transition">Painel</a>
+    <span>/</span>
+    <a href="{{ url_for('colaborador.blocos') }}" class="hover:text-ifce transition">Blocos</a>
+    <span>/</span>
+    <a href="{{ url_for('colaborador.ambientes_do_bloco', bloco_id=bloco.id) }}"
+       class="hover:text-ifce transition">{{ bloco.nome }}</a>
+    <span>/</span>
+    <span class="text-gray-600 font-medium">Nova vistoria</span>
+  </nav>
+</div>
+
+{# ── Cabeçalho ──────────────────────────────────────────────────────────────── #}
+<div class="mb-6 mt-3 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+  <div>
+    <p class="text-xs font-semibold text-ifce uppercase tracking-widest mb-1">Registrar vistoria</p>
+    <h1 class="text-2xl font-bold text-gray-900 leading-tight">{{ ambiente.nome }}</h1>
+    <p class="text-sm text-gray-500 mt-0.5">
+      Bloco: <span class="font-medium text-gray-700">{{ bloco.nome }}</span>
+      &nbsp;·&nbsp;
+      Responsável: <span class="font-medium text-gray-700">{{ colaborador.nome_exibicao }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('colaborador.ambientes_do_bloco', bloco_id=bloco.id) }}"
+     class="self-start sm:self-auto text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1 transition">
+    ← Voltar
+  </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  {# ── Formulário ─────────────────────────────────────────────────────────────── #}
+  <div class="lg:col-span-2">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
+        <h2 class="text-sm font-semibold text-gray-700">Dados da vistoria</h2>
+      </div>
+
+      <form method="POST" novalidate class="px-6 py-5 space-y-5">
+        {{ form.hidden_tag() }}
+
+        {# Data e hora #}
+        <div>
+          <label for="{{ form.data_vistoria.id }}"
+                 class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            {{ form.data_vistoria.label.text }}
+            <span class="text-rose-500 ml-0.5">*</span>
+          </label>
+          {{ form.data_vistoria(
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition" +
+                      (" border-rose-400" if form.data_vistoria.errors else "")
+          ) }}
+          {% for e in form.data_vistoria.errors %}
+            <p class="mt-1 text-xs text-rose-500">{{ e }}</p>
+          {% endfor %}
+        </div>
+
+        {# Situação geral #}
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+            {{ form.situacao_geral.label.text }}
+            <span class="text-rose-500 ml-0.5">*</span>
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="situacao-option cursor-pointer">
+              <input type="radio" name="situacao_geral" value="ok"
+                     class="sr-only"
+                     {% if form.situacao_geral.data == 'ok' or not form.situacao_geral.data %}checked{% endif %}>
+              <div class="situacao-card flex items-center gap-3 rounded-xl border-2 px-4 py-3 transition select-none
+                           border-ifce bg-green-50">
+                <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-ifce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-800">OK</p>
+                  <p class="text-xs text-gray-500">Sem pendências</p>
+                </div>
+              </div>
+            </label>
+
+            <label class="situacao-option cursor-pointer">
+              <input type="radio" name="situacao_geral" value="com_pendencia"
+                     class="sr-only"
+                     {% if form.situacao_geral.data == 'com_pendencia' %}checked{% endif %}>
+              <div class="situacao-card flex items-center gap-3 rounded-xl border-2 px-4 py-3 transition select-none
+                           border-gray-200 bg-white hover:border-rose-300 hover:bg-rose-50">
+                <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-gray-800">Com pendência</p>
+                  <p class="text-xs text-gray-500">Requer atenção</p>
+                </div>
+              </div>
+            </label>
+          </div>
+          {% for e in form.situacao_geral.errors %}
+            <p class="mt-1 text-xs text-rose-500">{{ e }}</p>
+          {% endfor %}
+        </div>
+
+        {# Observações #}
+        <div>
+          <label for="{{ form.observacoes.id }}"
+                 class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+            {{ form.observacoes.label.text }}
+            <span class="text-gray-400 font-normal ml-1">(opcional)</span>
+          </label>
+          {{ form.observacoes(
+               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ifce focus:border-transparent transition",
+               placeholder="Descreva condições observadas, detalhes do ambiente, situações identificadas…"
+          ) }}
+        </div>
+
+        {# Ações #}
+        <div class="flex items-center gap-3 pt-1">
+          {{ form.submit(
+               class="inline-flex items-center gap-2 bg-ifce hover:bg-ifce-dark text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition focus:outline-none focus:ring-2 focus:ring-ifce focus:ring-offset-2"
+          ) }}
+          <a href="{{ url_for('colaborador.ambientes_do_bloco', bloco_id=bloco.id) }}"
+             class="text-sm text-gray-500 hover:text-gray-700 transition">
+            Cancelar
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {# ── Painel lateral: histórico ──────────────────────────────────────────────── #}
+  <div class="space-y-4">
+
+    {# Info do ambiente #}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-5 py-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Ambiente</p>
+      <p class="text-sm font-semibold text-gray-800">{{ ambiente.nome }}</p>
+      {% if ambiente.descricao %}
+        <p class="text-xs text-gray-500 mt-1">{{ ambiente.descricao }}</p>
+      {% endif %}
+      <div class="mt-3 pt-3 border-t border-gray-100">
+        <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Bloco</p>
+        <p class="text-sm text-gray-700">{{ bloco.nome }}</p>
+      </div>
+    </div>
+
+    {# Histórico recente #}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-gray-100 bg-gray-50">
+        <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Últimas vistorias</p>
+      </div>
+      {% if historico %}
+        <ul class="divide-y divide-gray-100">
+          {% for v in historico %}
+          <li class="px-5 py-3">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-xs text-gray-600">{{ v.data_vistoria.strftime('%d/%m/%Y %H:%M') }}</span>
+              {% if v.situacao_geral == 'ok' %}
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 uppercase">OK</span>
+              {% else %}
+                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 uppercase">Pendência</span>
+              {% endif %}
+            </div>
+            {% if v.colaborador %}
+              <p class="text-[11px] text-gray-400 mt-0.5">{{ v.colaborador.nome_exibicao }}</p>
+            {% endif %}
+            {% if v.observacoes %}
+              <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ v.observacoes }}</p>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="px-5 py-6 text-center">
+          <p class="text-xs text-gray-400">Nenhuma vistoria anterior neste ambiente.</p>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Seleção visual dos cards de situação
+  document.querySelectorAll('.situacao-option').forEach(function(label) {
+    var input = label.querySelector('input[type="radio"]');
+    var card  = label.querySelector('.situacao-card');
+
+    function atualizar() {
+      document.querySelectorAll('.situacao-option').forEach(function(l) {
+        var i = l.querySelector('input');
+        var c = l.querySelector('.situacao-card');
+        if (i.value === 'ok') {
+          c.className = c.className.replace(/border-\S+|bg-\S+/g, '').trim();
+          c.classList.add(i.checked ? 'border-ifce' : 'border-gray-200');
+          c.classList.add(i.checked ? 'bg-green-50'  : 'bg-white');
+          c.querySelector('div').className = c.querySelector('div').className.replace(/bg-\S+/g, '').trim();
+          c.querySelector('div').classList.add(i.checked ? 'bg-green-100' : 'bg-gray-100');
+          c.querySelector('svg').className = c.querySelector('svg').className.replace(/text-\S+/g, '').trim();
+          c.querySelector('svg').classList.add(i.checked ? 'text-ifce' : 'text-gray-400');
+        } else {
+          c.className = c.className.replace(/border-\S+|bg-\S+/g, '').trim();
+          c.classList.add(i.checked ? 'border-rose-400' : 'border-gray-200');
+          c.classList.add(i.checked ? 'bg-rose-50'      : 'bg-white');
+          c.querySelector('div').className = c.querySelector('div').className.replace(/bg-\S+/g, '').trim();
+          c.querySelector('div').classList.add(i.checked ? 'bg-rose-100' : 'bg-gray-100');
+          c.querySelector('svg').className = c.querySelector('svg').className.replace(/text-\S+/g, '').trim();
+          c.querySelector('svg').classList.add(i.checked ? 'text-rose-500' : 'text-gray-400');
+        }
+      });
+    }
+
+    input.addEventListener('change', atualizar);
+    label.addEventListener('click', function() {
+      input.checked = true;
+      atualizar();
+    });
+  });
+</script>
+
+{% endblock %}
