@@ -217,6 +217,7 @@
       <span class="contagem">{{ ocorrencias | length }} registros</span>
     </div>
 
+    {% if ocorrencias %}
     <div>
       {% for oc in ocorrencias %}
       <a href="{{ url_for('ocorrencias.detalhe', ocorrencia_id=oc.id) }}"

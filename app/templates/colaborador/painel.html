@@ -105,6 +105,7 @@
           <span class="status-badge badge-{{ at.status }}">{{ dict(at.STATUS).get(at.status, at.status) }}</span>
           {% if at.status in proximos_status %}
           <form action="{{ url_for('colaborador.atividade_status', id=at.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit"
                     class="text-xs text-ifce hover:underline font-medium">
               {{ label_proximo[at.status] }} →

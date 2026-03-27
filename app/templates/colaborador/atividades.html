@@ -160,6 +160,7 @@
       <div class="flex-shrink-0 self-end sm:self-start">
         {% if at.status in proximos_status %}
         <form action="{{ url_for('colaborador.atividade_status', id=at.id) }}" method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           {% if at.status == 'pendente' %}
           <button type="submit" class="btn-avancar btn-iniciar">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
